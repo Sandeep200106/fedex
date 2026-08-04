@@ -1,0 +1,10 @@
+services:
+  pipeline-builder-ui:
+    build:
+      context: .
+      args:
+        VITE_LLM_API_KEY: ${VITE_LLM_API_KEY:-}
+        VITE_LLM_MODEL: ${VITE_LLM_MODEL:-}
+        VITE_LLM_BASE_URL: ${VITE_LLM_BASE_URL:-}
+    ports:
+      - "8080:80"

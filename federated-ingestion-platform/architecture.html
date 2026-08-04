@@ -1,0 +1,830 @@
+<title>Federated Ingestion Platform — Architecture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f7fa;
+    --surface: #ffffff;
+    --surface-2: #eef1f6;
+    --border: #dde2ea;
+    --ink: #1b2430;
+    --ink-muted: #667085;
+    --brand: #4d148c;
+    --brand-dark: #34095e;
+    --accent: #ff6600;
+    --tier-data: #0e7c86;
+    --tier-ai: #9c3f7a;
+    --tier-ext: #45536b;
+    --ring: rgba(77, 20, 140, 0.18);
+    --shadow: 0 1px 2px rgba(27, 36, 48, 0.06), 0 8px 24px rgba(27, 36, 48, 0.06);
+    --font-display: 'Sora', -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --font-body: 'Plus Jakarta Sans', -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+
+    /* pill / box-tint palette — saturated enough to read as genuinely colorful, not just pastel */
+    --pill-yellow-bg: #fbedc0; --pill-yellow-ink: #7a5c0a; --pill-yellow-bd: #e8cd76;
+    --pill-green-bg: #cdf1de;  --pill-green-ink: #0f6b3d; --pill-green-bd: #8fdcb2;
+    --pill-purple-bg: #e7d6f9; --pill-purple-ink: #5d2a92; --pill-purple-bd: #c49dec;
+    --pill-blue-bg: #d3e6fc;   --pill-blue-ink: #17559e;  --pill-blue-bd: #92c0f4;
+    --pill-red-bg: #fbd9d6;    --pill-red-ink: #9c2920;   --pill-red-bd: #ee9b93;
+    --pill-orange-bg: #fbe2c8; --pill-orange-ink: #9c4a08; --pill-orange-bd: #f0b571;
+    --pill-gray-bg: #e4e8f0;  --pill-gray-ink: #3d4a63;  --pill-gray-bd: #c3cbdb;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #120e1c;
+      --surface: #1c1630;
+      --surface-2: #241c3c;
+      --border: #362a52;
+      --ink: #eef0f7;
+      --ink-muted: #a79fc2;
+      --brand: #c197f2;
+      --brand-dark: #8a5cd6;
+      --accent: #ff9452;
+      --tier-data: #4bd2d8;
+      --tier-ai: #e084b8;
+      --tier-ext: #9aa7c4;
+      --ring: rgba(193, 151, 242, 0.22);
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 28px rgba(0, 0, 0, 0.35);
+
+      --pill-yellow-bg: #43350f; --pill-yellow-ink: #ffe38a; --pill-yellow-bd: #6e5a1e;
+      --pill-green-bg: #0d4530;  --pill-green-ink: #8ff5bc; --pill-green-bd: #1c7049;
+      --pill-purple-bg: #3a2755; --pill-purple-ink: #e7c8ff; --pill-purple-bd: #5c3f82;
+      --pill-blue-bg: #163055;   --pill-blue-ink: #a9d4ff;  --pill-blue-bd: #2a5488;
+      --pill-red-bg: #47201f;    --pill-red-ink: #ffb3ab;   --pill-red-bd: #723531;
+      --pill-orange-bg: #472e10; --pill-orange-ink: #ffc182; --pill-orange-bd: #714d1c;
+      --pill-gray-bg: #2a2145;  --pill-gray-ink: #d3d8e8;  --pill-gray-bd: #423665;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #120e1c;
+    --surface: #1c1630;
+    --surface-2: #241c3c;
+    --border: #362a52;
+    --ink: #eef0f7;
+    --ink-muted: #a79fc2;
+    --brand: #c197f2;
+    --brand-dark: #8a5cd6;
+    --accent: #ff9452;
+    --tier-data: #4bd2d8;
+    --tier-ai: #e084b8;
+    --tier-ext: #9aa7c4;
+    --ring: rgba(193, 151, 242, 0.22);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 28px rgba(0, 0, 0, 0.35);
+
+    --pill-yellow-bg: #332a13; --pill-yellow-ink: #f0d478; --pill-yellow-bd: #5c4a22;
+    --pill-green-bg: #123626;  --pill-green-ink: #7fe0ab; --pill-green-bd: #1f5c3f;
+    --pill-purple-bg: #2c1f42; --pill-purple-ink: #d9b8f5; --pill-purple-bd: #4a3468;
+    --pill-blue-bg: #16263f;   --pill-blue-ink: #9dc4f5;  --pill-blue-bd: #274468;
+    --pill-red-bg: #3a1c1c;    --pill-red-ink: #f0a29c;   --pill-red-bd: #5c2e2c;
+    --pill-orange-bg: #3a2712; --pill-orange-ink: #f5b877; --pill-orange-bd: #5c4022;
+    --pill-gray-bg: #241c3c;  --pill-gray-ink: #c3c9d9;  --pill-gray-bd: #362a52;
+  }
+  :root[data-theme="light"] {
+    --bg: #f5f7fa;
+    --surface: #ffffff;
+    --surface-2: #eef1f6;
+    --border: #dde2ea;
+    --ink: #1b2430;
+    --ink-muted: #667085;
+    --brand: #4d148c;
+    --brand-dark: #34095e;
+    --accent: #ff6600;
+    --tier-data: #0e7c86;
+    --tier-ai: #9c3f7a;
+    --tier-ext: #45536b;
+    --ring: rgba(77, 20, 140, 0.18);
+    --shadow: 0 1px 2px rgba(27, 36, 48, 0.06), 0 8px 24px rgba(27, 36, 48, 0.06);
+
+    --pill-yellow-bg: #fdf6e3; --pill-yellow-ink: #8a6d1a; --pill-yellow-bd: #f0e0a8;
+    --pill-green-bg: #e9f7ef;  --pill-green-ink: #1f7a4d; --pill-green-bd: #bfe6cf;
+    --pill-purple-bg: #f3ecfb; --pill-purple-ink: #6b3fa0; --pill-purple-bd: #ddc9f2;
+    --pill-blue-bg: #eaf2fd;   --pill-blue-ink: #2760b0;  --pill-blue-bd: #c9dcf5;
+    --pill-red-bg: #fdecec;    --pill-red-ink: #b0342b;   --pill-red-bd: #f3cac6;
+    --pill-orange-bg: #fdf0e4; --pill-orange-ink: #b0530b; --pill-orange-bd: #f5d4b3;
+    --pill-gray-bg: #eef1f6;  --pill-gray-ink: #4a5568;  --pill-gray-bd: #dde2ea;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 40px 24px 64px;
+  }
+
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--brand);
+    font-weight: 600;
+  }
+  h1 {
+    font-family: var(--font-display);
+    font-size: clamp(26px, 4vw, 34px);
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    margin: 6px 0 8px;
+    text-wrap: balance;
+    background: linear-gradient(100deg, var(--brand) 0%, var(--tier-ai) 55%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: var(--brand);
+    -webkit-text-fill-color: transparent;
+  }
+  .dek {
+    color: var(--ink-muted);
+    font-size: 15px;
+    line-height: 1.6;
+    max-width: 68ch;
+    margin: 0 0 18px;
+  }
+
+  /* top summary strip, matching the reference screenshot's row of capsule tags */
+  .top-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 26px; }
+
+  .tabs {
+    display: inline-flex;
+    gap: 2px;
+    padding: 3px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 24px;
+  }
+  .tab {
+    appearance: none;
+    border: none;
+    background: transparent;
+    color: var(--ink-muted);
+    font-family: var(--font-body);
+    font-size: 13.5px;
+    font-weight: 600;
+    padding: 8px 16px;
+    border-radius: 7px;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .tab[aria-selected="true"] {
+    background: var(--surface);
+    color: var(--ink);
+    box-shadow: var(--shadow);
+  }
+  .tab:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+  .panes { position: relative; }
+  .pane { display: none; }
+  .pane.active { display: block; }
+
+  .flow-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2px 4px;
+  }
+
+  .fbreak-note {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 6px 0;
+    color: var(--ink-muted);
+    font-size: 11px;
+    font-family: var(--font-mono);
+  }
+  .fbreak-note::before, .fbreak-note::after {
+    content: "";
+    height: 1px;
+    background: var(--border);
+    flex: 1;
+  }
+  .flow-row .fbreak-note { flex-basis: 100%; margin: 10px 0 16px; }
+
+  /* compact pill-style nodes, sized like the reference screenshot, wired with arrows */
+  .fnode-wrap { position: relative; }
+  .fnode {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    font-weight: 700;
+    padding: 9px 16px;
+    border-radius: 100px;
+    border: 1.5px solid var(--tint-bd, var(--border));
+    background: var(--tint-bg, var(--surface));
+    color: var(--tint-ink, var(--ink));
+    cursor: pointer;
+    white-space: nowrap;
+    transition: box-shadow 0.15s ease, transform 0.1s ease;
+  }
+  .fnode:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
+  .fnode:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+  .fnode[aria-expanded="true"] { box-shadow: 0 0 0 3px var(--ring); }
+  .fnode-idx { opacity: 0.6; font-size: 10.5px; }
+  .fnode-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .fnode-dot.status-real { background: #147a4a; }
+  .fnode-dot.status-mixed { background: #b0530b; }
+  .fnode-dot.status-sim { background: transparent; border: 1.5px dashed currentColor; opacity: 0.6; }
+
+  .fconnector-h {
+    display: flex;
+    align-items: center;
+    padding: 0 2px;
+    color: var(--ink-muted);
+    opacity: 0.75;
+    flex-shrink: 0;
+  }
+
+  .fpop-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 15;
+    background: transparent;
+    display: none;
+  }
+  .fpop-backdrop.open { display: block; }
+
+  .fpopover {
+    position: absolute;
+    top: calc(100% + 14px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(380px, 88vw);
+    background: var(--surface);
+    border: 1.5px solid var(--tint-bd, var(--border));
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    padding: 16px 18px 18px;
+    z-index: 20;
+    display: none;
+    text-align: left;
+  }
+  .fpopover.open { display: block; }
+  .fpopover::before {
+    content: "";
+    position: absolute;
+    top: -7px;
+    left: 50%;
+    transform: translateX(-50%) rotate(45deg);
+    width: 12px;
+    height: 12px;
+    background: var(--surface);
+    border-left: 1.5px solid var(--tint-bd, var(--border));
+    border-top: 1.5px solid var(--tint-bd, var(--border));
+    border-radius: 2px 0 0 0;
+  }
+  .fpop-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+  .fpop-title {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 15px;
+    color: var(--tint-ink, var(--ink));
+    flex: 1;
+  }
+  .fpop-sub {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--tint-ink, var(--ink-muted));
+    opacity: 0.8;
+    margin-bottom: 8px;
+  }
+  .fpop-body {
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--ink);
+    margin: 8px 0 12px;
+  }
+  .fpop-runson {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--tint-ink, var(--ink-muted));
+    opacity: 0.85;
+    margin-bottom: 12px;
+  }
+  .fpop-section { margin-top: 12px; }
+  .fpop-section:first-of-type { margin-top: 0; }
+  .fpop-section-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--tint-ink, var(--ink-muted));
+    opacity: 0.8;
+    margin-bottom: 6px;
+  }
+
+  .status-pill {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 100px;
+    white-space: nowrap;
+    border: 1px solid transparent;
+  }
+  .status-real { color: #147a4a; background: rgba(20,122,74,0.12); border-color: rgba(20,122,74,0.3); }
+  .status-sim { color: var(--ink-muted); background: rgba(255,255,255,0.5); border-color: var(--tint-bd, var(--border)); border-style: dashed; }
+  .status-mixed { color: #b0530b; background: rgba(255,102,0,0.14); border-color: rgba(255,102,0,0.3); }
+
+  .detail-section-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--tint-ink, var(--ink-muted));
+    opacity: 0.8;
+    margin-bottom: 8px;
+  }
+  .file-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .file-chip {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    background: var(--surface);
+    border: 1px solid var(--tint-bd, var(--border));
+    color: var(--ink);
+    padding: 4px 8px;
+    border-radius: 6px;
+  }
+
+  /* Below-the-flow "what we're using" band */
+  .stack-band {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px 20px 20px;
+    box-shadow: var(--shadow);
+  }
+  .stack-band-title {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    margin-bottom: 4px;
+  }
+  .stack-band-dek {
+    font-size: 12.5px;
+    color: var(--ink-muted);
+    margin-bottom: 14px;
+    line-height: 1.5;
+  }
+  .stack-group { margin-bottom: 14px; }
+  .stack-group:last-child { margin-bottom: 0; }
+  .stack-group-label {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--ink);
+    margin-bottom: 8px;
+  }
+  .pill-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .pill {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 100px;
+    border: 1px solid;
+    white-space: nowrap;
+  }
+  .pill-yellow { background: var(--pill-yellow-bg); color: var(--pill-yellow-ink); border-color: var(--pill-yellow-bd); }
+  .pill-green  { background: var(--pill-green-bg);  color: var(--pill-green-ink);  border-color: var(--pill-green-bd); }
+  .pill-purple { background: var(--pill-purple-bg); color: var(--pill-purple-ink); border-color: var(--pill-purple-bd); }
+  .pill-blue   { background: var(--pill-blue-bg);   color: var(--pill-blue-ink);   border-color: var(--pill-blue-bd); }
+  .pill-red    { background: var(--pill-red-bg);    color: var(--pill-red-ink);    border-color: var(--pill-red-bd); }
+  .pill-orange { background: var(--pill-orange-bg); color: var(--pill-orange-ink); border-color: var(--pill-orange-bd); }
+  .pill-gray   { background: var(--pill-gray-bg);   color: var(--pill-gray-ink);   border-color: var(--pill-gray-bd); }
+
+  .footnote {
+    margin-top: 28px;
+    font-size: 12.5px;
+    color: var(--ink-muted);
+    line-height: 1.6;
+    border-top: 1px solid var(--border);
+    padding-top: 16px;
+  }
+  .footnote strong { color: var(--ink); }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+
+<div class="wrap">
+  <div class="eyebrow">Federated Ingestion Platform</div>
+  <h1>How a pipeline gets built, deployed, and watched</h1>
+  <p class="dek">This app takes a user from an empty wizard to a running, monitored data pipeline. Click any step below for what it does, which files implement it, the backend/data services it hands off to, and whether it's really wired up or simulated for the demo.</p>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tab-flow" aria-selected="true" aria-controls="pane-flow">Pipeline flow</button>
+    <button class="tab" role="tab" id="tab-system" aria-selected="false" aria-controls="pane-system">System architecture</button>
+    <button class="tab" role="tab" id="tab-stack" aria-selected="false" aria-controls="pane-stack">Data services &amp; config API</button>
+  </div>
+
+  <div class="panes">
+    <div class="pane active" id="pane-flow" role="tabpanel" aria-labelledby="tab-flow">
+      <div class="flow-row" id="flow-nodes"></div>
+    </div>
+    <div class="pane" id="pane-system" role="tabpanel" aria-labelledby="tab-system">
+      <div class="flow-row" id="system-nodes"></div>
+    </div>
+    <div class="pane" id="pane-stack" role="tabpanel" aria-labelledby="tab-stack">
+      <div class="stack-band">
+        <div class="stack-band-title">Data services &amp; config API — what we're using</div>
+        <div class="stack-band-dek">The intended production path is UI → Config API → GitHub → Airflow → a GCP data service. None of the boxes below exist as real backend code in this repo (see "External systems" in the System architecture tab) — they're what the wizard's steps and job history are designed to hand off to.</div>
+
+        <div class="stack-group">
+          <div class="stack-group-label">Config API</div>
+          <div class="pill-row">
+            <span class="pill pill-purple">Connections store (host, credentials, auth)</span>
+            <span class="pill pill-purple">Pipeline config commit (Review &amp; deploy)</span>
+            <span class="pill pill-purple">Column mapping persistence</span>
+          </div>
+        </div>
+
+        <div class="stack-group">
+          <div class="stack-group-label">GCP Data Services</div>
+          <div class="pill-row">
+            <span class="pill pill-blue">Dataflow</span>
+            <span class="pill pill-blue">Dataproc</span>
+            <span class="pill pill-blue">Cloud Data Fusion</span>
+            <span class="pill pill-blue">GCS</span>
+            <span class="pill pill-blue">BigQuery</span>
+          </div>
+        </div>
+
+        <div class="stack-group">
+          <div class="stack-group-label">Orchestration &amp; delivery</div>
+          <div class="pill-row">
+            <span class="pill pill-green">GitHub (commit-triggered deploy)</span>
+            <span class="pill pill-green">Airflow (cron schedule + DAG run)</span>
+            <span class="pill pill-green">Job History (run status, logs)</span>
+          </div>
+        </div>
+
+        <div class="stack-group">
+          <div class="stack-group-label">Connections &amp; source/target types</div>
+          <div class="pill-row">
+            <span class="pill pill-yellow">PostgreSQL</span>
+            <span class="pill pill-yellow">Oracle</span>
+            <span class="pill pill-yellow">Kafka</span>
+            <span class="pill pill-yellow">GCS</span>
+            <span class="pill pill-yellow">BigQuery</span>
+          </div>
+        </div>
+
+        <div class="stack-group">
+          <div class="stack-group-label">AI / RAG layer</div>
+          <div class="pill-row">
+            <span class="pill pill-red">TF-IDF vector store (local, in-browser)</span>
+            <span class="pill pill-red">LLM endpoint — Groq, OpenAI-shaped API</span>
+          </div>
+        </div>
+
+        <div class="stack-group">
+          <div class="stack-group-label">Frontend runtime</div>
+          <div class="pill-row">
+            <span class="pill pill-gray">React 19 + TypeScript</span>
+            <span class="pill pill-gray">Vite 8</span>
+            <span class="pill pill-gray">localStorage (Connections persistence)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footnote">
+    <strong>Reading the labels:</strong> "Real" means the behavior actually runs in this codebase (client-side logic or localStorage). "Simulated" means it's faked with <code>setTimeout</code>/<code>Math.random</code> for the demo — no server exists. "Mixed" means part of the stage is real and part is a mock standing in for a future service.
+  </div>
+</div>
+
+<script>
+  const rightArrowSvg = '<svg width="20" height="14" viewBox="0 0 20 14" fill="none"><path d="M1 7H18M18 7L12 1M18 7L12 13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+  const FLOW = [
+    {
+      id: 'connect', index: '00', tint: 'blue', badge: 'anytime, before step 1',
+      title: 'Connect', runsOn: 'Runs on: UI + Config API', status: 'real',
+      body: "Set up each source and target connection once in the Connections tab — host, credentials, and auth for the system — then pick it by name later instead of re-entering details every time. The UI collects the details; a Config API would normally store and validate them.",
+      files: ['ConnectionsView.tsx', 'ConnectionForm.tsx', 'connectionsStore.ts', 'connectionValidation.ts'],
+      stack: [
+        { label: 'Config API', tint: 'purple', items: ['Connections store (host, credentials, auth)'] },
+        { label: 'Connections & source/target types', tint: 'yellow', items: ['PostgreSQL', 'Oracle', 'Kafka', 'GCS', 'BigQuery'] },
+        { label: 'Frontend runtime', tint: 'gray', items: ['localStorage (Connections persistence)'] },
+      ]
+    },
+    {
+      id: 'template', index: '01', tint: 'purple', badge: 'step 1',
+      title: 'Template', runsOn: 'Runs on: UI', status: 'real',
+      body: "Pick a prebuilt pipeline template, like PostgreSQL → GCS or PostgreSQL table → BigQuery table. Each template fixes the required source/target connection types for the next two steps and sets a default GCP data service (Dataflow, Dataproc, or Cloud Data Fusion), shown as a badge on the card.",
+      files: ['TemplateStep.tsx', 'data/templates.ts']
+    },
+    {
+      id: 'source', index: '02', tint: 'purple', badge: 'step 2',
+      title: 'Source', runsOn: 'Runs on: UI', status: 'real',
+      body: "Choose the saved connection this pipeline reads from. Only connections matching the type the template requires are listed — if none exist, a button jumps to the Connections tab with that type pre-selected. A read-only summary (host or bucket, owner, auth) confirms the pick.",
+      files: ['ConnectionPicker.tsx'],
+      stack: [
+        { label: 'Connections & source/target types', tint: 'yellow', items: ['PostgreSQL', 'Oracle', 'Kafka', 'GCS', 'BigQuery'] },
+      ]
+    },
+    {
+      id: 'target', index: '03', tint: 'purple', badge: 'step 3',
+      title: 'Target', runsOn: 'Runs on: UI', status: 'real',
+      body: "Choose the saved connection this pipeline writes to — the same picker as Source, filtered to the target type the template requires.",
+      files: ['ConnectionPicker.tsx'],
+      stack: [
+        { label: 'Connections & source/target types', tint: 'yellow', items: ['PostgreSQL', 'Oracle', 'Kafka', 'GCS', 'BigQuery'] },
+      ]
+    },
+    {
+      id: 'mapping', index: '04', tint: 'blue', badge: 'step 4',
+      title: 'Mapping', runsOn: 'Runs on: UI + Config API', status: 'mixed',
+      body: "Name the source and target objects, then map columns between them. Columns are fetched automatically once both sides have a schema — drag a source column onto a target one, and mismatched types are flagged in amber. File targets (S3, GCS) skip mapping and ask for a file format and load mode instead. An \"Auto-map with AI\" button will call an LLM if one is configured, else it falls back to matching by column name.",
+      files: ['MappingStep.tsx', 'ColumnMappingBoard.tsx', 'data/schemaIntrospection.ts', 'rag/llmClient.ts'],
+      stack: [
+        { label: 'Config API', tint: 'purple', items: ['Column mapping persistence'] },
+        { label: 'AI / RAG layer', tint: 'red', items: ['LLM endpoint — Groq, OpenAI-shaped API'] },
+      ]
+    },
+    {
+      id: 'details', index: '05', tint: 'purple', badge: 'step 5', breakBefore: true,
+      title: 'Schedule & details', runsOn: 'Runs on: UI + Config API', status: 'real',
+      body: "Name the pipeline, add optional transformations — filter, dedupe, or a per-column function like TRIM, UPPER, or CAST — set the Airflow schedule as a cron expression plus timezone, and choose which GCP data service (Dataflow, Dataproc, or Cloud Data Fusion) will run it.",
+      files: ['PipelineDetailsStep.tsx', 'data/transformFunctions.ts', 'data/dataServices.ts'],
+      stack: [
+        { label: 'GCP Data Services', tint: 'blue', items: ['Dataflow', 'Dataproc', 'Cloud Data Fusion'] },
+        { label: 'Orchestration & delivery', tint: 'green', items: ['Airflow (cron schedule + DAG run)'] },
+      ]
+    },
+    {
+      id: 'deploy', index: '06', tint: 'orange', badge: 'step 6', status: 'sim',
+      title: 'Review & deploy', runsOn: 'Runs on: UI + Config API + GitHub + Airflow',
+      body: "Review the exact JSON that would be generated for the source connection, target connection, and pipeline config — download it, then \"Commit to GitHub\" (a fake SHA appears after ~900ms). Only after that commit does \"Run pipeline\" unlock, which is what a real Config API commit would let Airflow pick up.",
+      files: ['ReviewStep.tsx', 'utils/download.ts', 'App.tsx'],
+      stack: [
+        { label: 'Config API', tint: 'purple', items: ['Pipeline config commit (Review & deploy)'] },
+        { label: 'Orchestration & delivery', tint: 'green', items: ['GitHub (commit-triggered deploy)'] },
+      ]
+    },
+    {
+      id: 'monitor', index: '07', tint: 'gray', badge: 'after deploy', status: 'sim',
+      title: 'Job History', runsOn: 'Runs on: Airflow + Data Services + Config API + UI',
+      body: "Track every run's status and logs in Job History, and watch file presence/size in Data Quality. In this build, clicking Run pipeline just pushes a Running job that flips to Success after ~3 seconds — real Airflow + GCP Data Service execution isn't wired up. An \"Analyze with AI\" button explains failures using an LLM or a pattern-matched mock.",
+      files: ['JobHistoryView.tsx', 'DataQualityView.tsx', 'data/jobRuns.ts', 'rag/llmClient.ts'],
+      stack: [
+        { label: 'Orchestration & delivery', tint: 'green', items: ['Airflow (cron schedule + DAG run)', 'Job History (run status, logs)'] },
+        { label: 'GCP Data Services', tint: 'blue', items: ['GCS', 'BigQuery'] },
+        { label: 'AI / RAG layer', tint: 'red', items: ['TF-IDF vector store (local, in-browser)', 'LLM endpoint — Groq, OpenAI-shaped API'] },
+      ]
+    },
+  ];
+
+  const SYSTEM = [
+    {
+      id: 'sys-ui', tint: 'purple', status: 'real',
+      title: 'Frontend SPA', sub: 'React 19 + TypeScript, built with Vite 8',
+      runsOn: 'Runs on: the browser, nothing else',
+      body: "There's no router and no Redux/Zustand — App.tsx is the entire state machine: every piece of wizard, connection, job, and data-quality state lives there in useState/useEffect, and gets passed down to whichever view or step is active.",
+      files: ['main.tsx', 'App.tsx', 'components/*.tsx (~15 files)'],
+      stack: [
+        { label: 'Frontend runtime', tint: 'gray', items: ['React 19 + TypeScript', 'Vite 8'] },
+      ]
+    },
+    {
+      id: 'sys-data', tint: 'blue', status: 'mixed',
+      title: 'Domain / data layer', sub: 'Plain TypeScript modules standing in for a backend',
+      runsOn: 'Runs on: the browser (localStorage + in-memory mocks)',
+      body: "Templates, schema lookups, data-quality rules, generated SQL previews, and job history all live here as static config plus simulated logic. Connections are the one part that's genuinely persisted (localStorage) — everything else resets on reload because it's Math.random()/setTimeout standing in for a real service.",
+      files: ['data/types.ts', 'data/templates.ts', 'data/schemaIntrospection.ts', 'data/dataQuality.ts', 'data/dqSqlGenerator.ts', 'data/jobRuns.ts', 'data/connectionsStore.ts'],
+      stack: [
+        { label: 'Connections & source/target types', tint: 'yellow', items: ['PostgreSQL', 'Oracle', 'Kafka', 'GCS', 'BigQuery'] },
+        { label: 'Frontend runtime', tint: 'gray', items: ['localStorage (Connections persistence)'] },
+      ]
+    },
+    {
+      id: 'sys-ai', tint: 'red', status: 'mixed',
+      title: 'RAG / AI layer', sub: 'A from-scratch TF-IDF search over static docs + live failures',
+      runsOn: 'Runs on: the browser, calls an LLM endpoint directly',
+      body: "The chat assistant and the failure-analysis buttons all go through the same local vector store: it ranks static documentation chunks and recent job/DQ failures by TF-IDF similarity, then either sends that context to a configured LLM endpoint (a Groq-hosted, OpenAI-shaped API, called straight from the browser with an API key in the bundle — explicitly noted in the code as not production-safe) or, with nothing configured, returns the retrieved text as a deterministic mock answer.",
+      files: ['rag/vectorStore.ts', 'rag/corpus.ts', 'rag/llmClient.ts'],
+      stack: [
+        { label: 'AI / RAG layer', tint: 'red', items: ['TF-IDF vector store (local, in-browser)', 'LLM endpoint — Groq, OpenAI-shaped API'] },
+      ]
+    },
+    {
+      id: 'sys-ext', tint: 'gray', status: 'sim',
+      title: 'External systems', sub: 'Config API · GitHub · Airflow · GCP Data Services',
+      runsOn: 'Runs on: nothing — none of this exists in the repo',
+      body: "The intended production architecture is UI → Config API → GitHub → Airflow → a GCP data service (Dataflow, Dataproc, or Cloud Data Fusion). There is no server/, api/, or backend/ folder here — this repo is the UI half only, and everything past Review (the commit, the DAG pickup, the actual data movement) is faked with a timer.",
+      files: ['(not present in this repo)'],
+      stack: [
+        { label: 'Config API', tint: 'purple', items: ['Connections store (host, credentials, auth)', 'Pipeline config commit (Review & deploy)', 'Column mapping persistence'] },
+        { label: 'GCP Data Services', tint: 'blue', items: ['Dataflow', 'Dataproc', 'Cloud Data Fusion', 'GCS', 'BigQuery'] },
+        { label: 'Orchestration & delivery', tint: 'green', items: ['GitHub (commit-triggered deploy)', 'Airflow (cron schedule + DAG run)', 'Job History (run status, logs)'] },
+      ]
+    },
+  ];
+
+  const TINT_VARS = {
+    purple: ['--pill-purple-bg', '--pill-purple-ink', '--pill-purple-bd'],
+    blue:   ['--pill-blue-bg',   '--pill-blue-ink',   '--pill-blue-bd'],
+    red:    ['--pill-red-bg',    '--pill-red-ink',    '--pill-red-bd'],
+    orange: ['--pill-orange-bg', '--pill-orange-ink', '--pill-orange-bd'],
+    gray:   ['--pill-gray-bg',   '--pill-gray-ink',   '--pill-gray-bd'],
+    yellow: ['--pill-yellow-bg', '--pill-yellow-ink', '--pill-yellow-bd'],
+    green:  ['--pill-green-bg',  '--pill-green-ink',  '--pill-green-bd'],
+  };
+  const STATUS_LABEL = { real: 'Real', sim: 'Simulated', mixed: 'Mixed' };
+  const STATUS_CLASS = { real: 'status-real', sim: 'status-sim', mixed: 'status-mixed' };
+
+  function applyTint(el, tint) {
+    const [bgVar, inkVar, bdVar] = TINT_VARS[tint] || TINT_VARS.gray;
+    el.style.setProperty('--tint-bg', `var(${bgVar})`);
+    el.style.setProperty('--tint-ink', `var(${inkVar})`);
+    el.style.setProperty('--tint-bd', `var(${bdVar})`);
+  }
+
+  // Each stage is a compact pill; clicking it opens a popover directly
+  // below that pill with the same detail a full card used to show.
+  function buildPopoverInner(node, subLabel) {
+    const filesHtml = node.files ? `
+      <div class="fpop-section">
+        <div class="fpop-section-label">Key files</div>
+        <div class="file-chips">${node.files.map(f => `<span class="file-chip">${f}</span>`).join('')}</div>
+      </div>` : '';
+
+    const stackHtml = (node.stack || []).map(group => `
+      <div class="fpop-section">
+        <div class="fpop-section-label">${group.label}</div>
+        <div class="pill-row">${group.items.map(item => `<span class="pill pill-${group.tint}">${item}</span>`).join('')}</div>
+      </div>
+    `).join('');
+
+    return `
+      <div class="fpop-head">
+        <span class="fpop-title">${node.title}</span>
+        <span class="status-pill ${STATUS_CLASS[node.status]}">${STATUS_LABEL[node.status]}</span>
+      </div>
+      ${subLabel ? `<div class="fpop-sub">${subLabel}</div>` : ''}
+      <div class="fpop-body">${node.body}</div>
+      <div class="fpop-runson">${node.runsOn}</div>
+      ${filesHtml}
+      ${stackHtml}
+    `;
+  }
+
+  function buildNode(node, indexLabel, subLabel) {
+    const wrap = document.createElement('div');
+    wrap.className = 'fnode-wrap';
+
+    const btn = document.createElement('button');
+    btn.className = 'fnode';
+    btn.type = 'button';
+    btn.setAttribute('aria-expanded', 'false');
+    applyTint(btn, node.tint);
+    btn.innerHTML = `
+      ${indexLabel ? `<span class="fnode-idx">${indexLabel}</span>` : ''}
+      <span class="fnode-dot ${STATUS_CLASS[node.status]}"></span>
+      <span>${node.title}</span>
+    `;
+
+    const pop = document.createElement('div');
+    pop.className = 'fpopover';
+    applyTint(pop, node.tint);
+    pop.innerHTML = buildPopoverInner(node, subLabel);
+
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      togglePopover(btn, pop);
+    });
+
+    wrap.appendChild(btn);
+    wrap.appendChild(pop);
+    return wrap;
+  }
+
+  let backdropEl = null;
+  function ensureBackdrop() {
+    if (backdropEl) return backdropEl;
+    backdropEl = document.createElement('div');
+    backdropEl.className = 'fpop-backdrop';
+    backdropEl.addEventListener('click', closeAllPopovers);
+    document.body.appendChild(backdropEl);
+    return backdropEl;
+  }
+
+  function closeAllPopovers() {
+    document.querySelectorAll('.fpopover.open').forEach(p => {
+      p.classList.remove('open');
+      p.style.transform = 'translateX(-50%)';
+    });
+    document.querySelectorAll('.fnode[aria-expanded="true"]').forEach(b => b.setAttribute('aria-expanded', 'false'));
+    if (backdropEl) backdropEl.classList.remove('open');
+  }
+
+  function clampPopover(pop) {
+    const rect = pop.getBoundingClientRect();
+    const margin = 16;
+    let shift = 0;
+    if (rect.left < margin) shift = margin - rect.left;
+    else if (rect.right > window.innerWidth - margin) shift = (window.innerWidth - margin) - rect.right;
+    if (shift !== 0) pop.style.transform = `translateX(calc(-50% + ${shift}px))`;
+  }
+
+  function togglePopover(btn, pop) {
+    const wasOpen = pop.classList.contains('open');
+    closeAllPopovers();
+    if (!wasOpen) {
+      pop.classList.add('open');
+      btn.setAttribute('aria-expanded', 'true');
+      ensureBackdrop().classList.add('open');
+      clampPopover(pop);
+    }
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeAllPopovers();
+  });
+
+  function buildFlow() {
+    const wrap = document.getElementById('flow-nodes');
+
+    FLOW.forEach((node, i) => {
+      if (node.breakBefore) {
+        const note = document.createElement('div');
+        note.className = 'fbreak-note';
+        note.textContent = 'pipeline is deployed';
+        wrap.appendChild(note);
+      } else if (i > 0) {
+        const conn = document.createElement('div');
+        conn.className = 'fconnector-h';
+        conn.innerHTML = rightArrowSvg;
+        wrap.appendChild(conn);
+      }
+
+      wrap.appendChild(buildNode(node, `${node.index} · ${node.badge}`, ''));
+    });
+  }
+
+  function buildSystem() {
+    const wrap = document.getElementById('system-nodes');
+
+    SYSTEM.forEach((node, i) => {
+      if (i > 0) {
+        const conn = document.createElement('div');
+        conn.className = 'fconnector-h';
+        conn.innerHTML = rightArrowSvg;
+        wrap.appendChild(conn);
+      }
+
+      wrap.appendChild(buildNode(node, '', node.sub));
+    });
+  }
+
+  function initTabs() {
+    const tabs = {
+      flow: { tab: document.getElementById('tab-flow'), pane: document.getElementById('pane-flow') },
+      system: { tab: document.getElementById('tab-system'), pane: document.getElementById('pane-system') },
+      stack: { tab: document.getElementById('tab-stack'), pane: document.getElementById('pane-stack') },
+    };
+
+    function activate(active) {
+      Object.entries(tabs).forEach(([key, { tab, pane }]) => {
+        const isActive = key === active;
+        tab.setAttribute('aria-selected', String(isActive));
+        pane.classList.toggle('active', isActive);
+      });
+    }
+    Object.entries(tabs).forEach(([key, { tab }]) => {
+      tab.addEventListener('click', () => activate(key));
+    });
+  }
+
+  buildFlow();
+  buildSystem();
+  initTabs();
+</script>

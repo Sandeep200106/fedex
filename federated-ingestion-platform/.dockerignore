@@ -1,0 +1,12 @@
+node_modules
+dist
+dist-ssr
+.git
+.env.local
+*.local
+screenshots
+*.docx
+*.pptx
+architecture.html
+README.md
+npm-debug.log*
