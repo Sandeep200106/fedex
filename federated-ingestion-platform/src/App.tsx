@@ -95,6 +95,12 @@ export default function App() {
   const [frameworkRules, setFrameworkRules] = useState(() => loadFrameworkRules())
   const [pipelines, setPipelines] = useState<PipelineConfig[]>(() => loadPipelines())
   const [airflowTriggers, setAirflowTriggers] = useState<AirflowTriggerConfig[]>(() => loadAirflowTriggers())
+  const [airflowFocusPipelineId, setAirflowFocusPipelineId] = useState<string | null>(null)
+
+  function openPipelineInAirflow(pipelineId: string) {
+    setAirflowFocusPipelineId(pipelineId)
+    setView('airflow')
+  }
 
   useEffect(() => {
     saveConnections(connections)
@@ -541,7 +547,7 @@ export default function App() {
 
       {view === 'history' && (
         <div className="app-body" style={{ gridTemplateColumns: '1fr' }}>
-          <JobHistoryView runs={jobRuns} onRerun={rerunJob} />
+          <JobHistoryView runs={jobRuns} onRerun={rerunJob} onOpenPipeline={openPipelineInAirflow} />
         </div>
       )}
 
@@ -589,6 +595,8 @@ export default function App() {
             pipelines={pipelines}
             onChange={setAirflowTriggers}
             onBuildPipeline={() => setView('build')}
+            focusPipelineId={airflowFocusPipelineId}
+            onFocusConsumed={() => setAirflowFocusPipelineId(null)}
           />
         </div>
       )}

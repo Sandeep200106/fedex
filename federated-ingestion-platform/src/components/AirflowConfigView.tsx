@@ -1,12 +1,21 @@
 import { useEffect, useState } from 'react'
 import type { AirflowTriggerConfig, ColumnInfo, ConnectionConfig, ConnectionType, FilterOperator, PipelineConfig } from '../types'
 import { emptyAirflowTriggerConfig } from '../types'
-import { CHECK_OBJECT_LABEL, airflowConfigDisplayName, buildAirflowDagConfig, requiresCheckColumn, sensorOperatorLabel } from '../data/airflowSensors'
+import {
+  CHECK_OBJECT_LABEL,
+  airflowConfigDisplayName,
+  buildAirflowDagConfig,
+  mockDagRunTimes,
+  requiresCheckColumn,
+  sensorOperatorLabel,
+  suggestAirflowConfigName,
+} from '../data/airflowSensors'
 import { pipelineDisplayName } from '../data/dataServices'
 import { CONNECTION_TYPES } from '../data/templates'
 import { FILTER_OPERATOR_OPTIONS } from '../data/filterOperators'
 import { fetchColumns, isIncrementalKeyCandidate } from '../data/schemaIntrospection'
 import { downloadJson } from '../utils/download'
+import { formatDateTime } from '../utils/format'
 import { slugify } from '../utils/slug'
 import HelpTip from './HelpTip'
 
@@ -16,6 +25,37 @@ interface AirflowConfigViewProps {
   pipelines: PipelineConfig[]
   onChange: (next: AirflowTriggerConfig[]) => void
   onBuildPipeline: () => void
+  // Set when arriving here from "view in Airflow" on a Job History row — focuses the config
+  // (or a fresh draft) for that pipeline and surfaces its connection details.
+  focusPipelineId?: string | null
+  onFocusConsumed?: () => void
+}
+
+function connectionTypeLabel(type: ConnectionType | undefined): string {
+  return CONNECTION_TYPES.find((t) => t.value === type)?.label ?? (type ?? '—')
+}
+
+function ConnectionSummaryCard({ label, connection }: { label: string; connection: ConnectionConfig | undefined }) {
+  return (
+    <div className="detail-card">
+      <div className="detail-card-label">{label}</div>
+      {connection ? (
+        <>
+          <strong>{connection.name}</strong>
+          <div className="connection-list-meta">
+            {connectionTypeLabel(connection.type)} · {connection.environment}
+          </div>
+          <div className="hint">
+            {connection.host}
+            {connection.port ? `:${connection.port}` : ''}
+            {connection.database ? ` / ${connection.database}` : ''}
+          </div>
+        </>
+      ) : (
+        <span className="hint">Not set on the pipeline.</span>
+      )}
+    </div>
+  )
 }
 
 function mockCommitSha(): string {
@@ -38,13 +78,14 @@ function validate(draft: AirflowTriggerConfig, checkConnectionType: ConnectionTy
   return issues
 }
 
-export default function AirflowConfigView({ configs, connections, pipelines, onChange, onBuildPipeline }: AirflowConfigViewProps) {
+export default function AirflowConfigView({ configs, connections, pipelines, onChange, onBuildPipeline, focusPipelineId, onFocusConsumed }: AirflowConfigViewProps) {
+  const [subTab, setSubTab] = useState<'configure' | 'recent'>('configure')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [draft, setDraft] = useState<AirflowTriggerConfig>(emptyAirflowTriggerConfig())
   const [originalId, setOriginalId] = useState<string | null>(null)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [committing, setCommitting] = useState(false)
-  const [commitSha, setCommitSha] = useState('')
+  const [nameManuallyEdited, setNameManuallyEdited] = useState(false)
   const [checkColumns, setCheckColumns] = useState<ColumnInfo[]>([])
   const [checkColumnsLoading, setCheckColumnsLoading] = useState(false)
 
@@ -54,9 +95,28 @@ export default function AirflowConfigView({ configs, connections, pipelines, onC
   const issues = validate(draft, checkConnection?.type)
   const canGenerate = issues.length === 0
 
+  // Suggests the DAG name from whichever of the connection/pipeline are picked — only while
+  // the user hasn't typed a name themselves, and never touches the connection/pipeline fields.
   useEffect(() => {
-    setCommitSha('')
-  }, [draft])
+    if (nameManuallyEdited) return
+    const suggested = suggestAirflowConfigName(checkConnection?.name, targetPipeline ? pipelineDisplayName(targetPipeline) : undefined)
+    if (!suggested) return
+    setDraft((prev) => (prev.name === suggested ? prev : { ...prev, name: suggested }))
+  }, [checkConnection?.name, targetPipeline, nameManuallyEdited])
+
+  useEffect(() => {
+    if (!focusPipelineId) return
+    const match = configs.find((c) => c.target_pipeline_id === focusPipelineId)
+    if (match) {
+      selectForEdit(match)
+    } else {
+      startNew()
+      setDraft((prev) => ({ ...prev, target_pipeline_id: focusPipelineId }))
+    }
+    setSubTab('configure')
+    onFocusConsumed?.()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusPipelineId])
 
   useEffect(() => {
     const object = draft.check_object.trim()
@@ -77,12 +137,14 @@ export default function AirflowConfigView({ configs, connections, pipelines, onC
     setSelectedId(config.config_id)
     setOriginalId(config.config_id)
     setDraft(config)
+    setNameManuallyEdited(true)
   }
 
   function startNew() {
     setSelectedId(null)
     setOriginalId(null)
     setDraft(emptyAirflowTriggerConfig())
+    setNameManuallyEdited(false)
   }
 
   function handleSave() {
@@ -107,9 +169,21 @@ export default function AirflowConfigView({ configs, connections, pipelines, onC
   }
 
   function commit() {
+    if (!originalId) return
     setCommitting(true)
     setTimeout(() => {
-      setCommitSha(mockCommitSha())
+      const committedAt = new Date()
+      const { lastRunAt, nextRunAt } = mockDagRunTimes(committedAt)
+      const updated: AirflowTriggerConfig = {
+        ...draft,
+        committed: true,
+        commit_sha: mockCommitSha(),
+        last_committed_at: committedAt.toISOString(),
+        last_run_at: lastRunAt,
+        next_run_at: nextRunAt,
+      }
+      onChange(configs.map((c) => (c.config_id === originalId ? updated : c)))
+      setDraft(updated)
       setCommitting(false)
     }, 900)
   }
@@ -129,6 +203,27 @@ export default function AirflowConfigView({ configs, connections, pipelines, onC
         </p>
       </div>
 
+      <div className="sub-tabs">
+        <button type="button" className={`sub-tab ${subTab === 'configure' ? 'active' : ''}`} onClick={() => setSubTab('configure')}>
+          Configure
+        </button>
+        <button type="button" className={`sub-tab ${subTab === 'recent' ? 'active' : ''}`} onClick={() => setSubTab('recent')}>
+          Recent DAGs
+        </button>
+      </div>
+
+      {subTab === 'recent' && (
+        <RecentDagsPanel
+          configs={configs}
+          pipelines={pipelines}
+          onOpen={(c) => {
+            selectForEdit(c)
+            setSubTab('configure')
+          }}
+        />
+      )}
+
+      {subTab === 'configure' && (
       <div className="connections-layout">
         <div className="connections-list">
           <button type="button" className="btn primary small connections-new-btn" onClick={startNew}>
@@ -182,8 +277,12 @@ export default function AirflowConfigView({ configs, connections, pipelines, onC
               <input
                 value={draft.name}
                 placeholder="Check vendor orders file, then trigger merge"
-                onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+                onChange={(e) => {
+                  setDraft({ ...draft, name: e.target.value })
+                  setNameManuallyEdited(true)
+                }}
               />
+              <span className="hint">Suggested from the connection/pipeline picked below — feel free to override it.</span>
             </div>
           </div>
 
@@ -343,6 +442,18 @@ export default function AirflowConfigView({ configs, connections, pipelines, onC
                 )}
               </div>
             </div>
+            {targetPipeline && (
+              <div className="detail-cards">
+                <ConnectionSummaryCard
+                  label="Pipeline source connection"
+                  connection={connections.find((c) => c.connection_id === targetPipeline.source.connection_ref)}
+                />
+                <ConnectionSummaryCard
+                  label="Pipeline target connection"
+                  connection={connections.find((c) => c.connection_id === targetPipeline.target.connection_ref)}
+                />
+              </div>
+            )}
           </div>
 
           <div>
@@ -413,19 +524,90 @@ export default function AirflowConfigView({ configs, connections, pipelines, onC
           <div className="deploy-section">
             <div className="section-title">Deploy (mock — no backend yet)</div>
             <div className="row-actions">
-              <button type="button" className="btn" disabled={!canGenerate || committing || Boolean(commitSha)} onClick={commit}>
-                {committing ? 'Committing…' : commitSha ? 'Committed' : 'Commit to GitHub'}
+              <button type="button" className="btn" disabled={!canGenerate || committing || isDirty || !originalId} onClick={commit}>
+                {committing ? 'Committing…' : draft.commit_sha ? 'Re-commit to GitHub' : 'Commit to GitHub'}
               </button>
-              {commitSha && (
+              {draft.commit_sha && (
                 <span className="hint">
-                  Mock commit {commitSha} to {draft.git_path || `airflow/${slugify(previewConfigId)}.json`}
+                  Mock commit {draft.commit_sha} to {draft.git_path || `airflow/${slugify(previewConfigId)}.json`} — last committed{' '}
+                  {formatDateTime(draft.last_committed_at ?? null)}. See it on the <strong>Recent DAGs</strong> tab.
                 </span>
               )}
             </div>
-            {!commitSha && <span className="hint">Commit before Airflow would pick this DAG up — matches UI → Config API → GitHub → Airflow.</span>}
+            {!draft.commit_sha && (
+              <span className="hint">
+                {!originalId
+                  ? 'Save this config before it can be committed.'
+                  : isDirty
+                    ? 'Save your changes before committing.'
+                    : 'Commit before Airflow would pick this DAG up — matches UI → Config API → GitHub → Airflow.'}
+              </span>
+            )}
           </div>
         </div>
       </div>
+      )}
+    </div>
+  )
+}
+
+function RecentDagsPanel({
+  configs,
+  pipelines,
+  onOpen,
+}: {
+  configs: AirflowTriggerConfig[]
+  pipelines: PipelineConfig[]
+  onOpen: (config: AirflowTriggerConfig) => void
+}) {
+  const committed = configs
+    .filter((c) => c.committed)
+    .sort((a, b) => (a.last_committed_at ?? '') < (b.last_committed_at ?? '') ? 1 : -1)
+
+  return (
+    <div className="panel-body">
+      <p className="hint" style={{ marginBottom: 12 }}>
+        DAGs that have been committed from the Configure tab. No Airflow instance is wired up yet, so the link below reopens the
+        config here rather than a real Airflow UI, and last/next run are mocked.
+      </p>
+      <table className="table">
+        <thead>
+          <tr>
+            <th>DAG</th>
+            <th>Triggers pipeline</th>
+            <th>Schedule</th>
+            <th>Last run</th>
+            <th>Next run</th>
+            <th>Commit</th>
+          </tr>
+        </thead>
+        <tbody>
+          {committed.map((c) => {
+            const pipeline = pipelines.find((p) => p.pipeline_id === c.target_pipeline_id)
+            return (
+              <tr key={c.config_id}>
+                <td>
+                  <button type="button" className="link-button" onClick={() => onOpen(c)}>
+                    {airflowConfigDisplayName(c)}
+                  </button>
+                </td>
+                <td>{pipeline ? pipelineDisplayName(pipeline) : c.target_pipeline_id || '—'}</td>
+                <td className="mono">{c.schedule.expression}</td>
+                <td>{formatDateTime(c.last_run_at ?? null)}</td>
+                <td>{formatDateTime(c.next_run_at ?? null)}</td>
+                <td className="mono">{c.commit_sha ?? '—'}</td>
+              </tr>
+            )
+          })}
+          {committed.length === 0 && (
+            <tr>
+              <td colSpan={6} style={{ color: 'var(--color-text-muted)', textAlign: 'center', padding: '18px 0' }}>
+                No DAGs committed yet — commit a config from the Configure tab to see it here.
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
     </div>
   )
 }

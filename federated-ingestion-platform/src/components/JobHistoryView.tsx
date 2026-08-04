@@ -6,6 +6,7 @@ import { buildLogAnalysisPrompt, callLlm, getLlmSettings, isLlmConfigured, mockL
 interface JobHistoryViewProps {
   runs: JobRun[]
   onRerun: (run: JobRun) => void
+  onOpenPipeline: (pipelineId: string) => void
 }
 
 const RERUNNABLE_STATES: RunState[] = ['failed', 'up_for_retry']
@@ -27,7 +28,7 @@ interface Analysis {
   isMock?: boolean
 }
 
-export default function JobHistoryView({ runs, onRerun }: JobHistoryViewProps) {
+export default function JobHistoryView({ runs, onRerun, onOpenPipeline }: JobHistoryViewProps) {
   const [pipelineFilter, setPipelineFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState<RunState | 'all'>('all')
   const [expandedRunId, setExpandedRunId] = useState<string | null>(null)
@@ -123,7 +124,17 @@ export default function JobHistoryView({ runs, onRerun }: JobHistoryViewProps) {
                   }}
                 >
                   <td>
-                    {run.pipeline_id}
+                    <button
+                      type="button"
+                      className="link-button"
+                      title="Open this pipeline's Airflow scheduling config"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onOpenPipeline(run.pipeline_id)
+                      }}
+                    >
+                      {run.pipeline_id}
+                    </button>
                     {run.dq_pattern_key && (
                       <span className="badge" style={{ marginLeft: 8 }} title="This failure is a DQ check, not an infra error — rerunning it checks whether that check has been adopted into the DQ framework.">
                         DQ-linked

@@ -294,6 +294,13 @@ export interface AirflowTriggerConfig {
   schedule: Schedule
   owner: string
   git_path: string
+  // Set once "Commit to GitHub" has run — no real Airflow/GitHub behind this, so these are
+  // mock values recorded at commit time purely to populate the Recent DAGs list.
+  committed?: boolean
+  commit_sha?: string
+  last_committed_at?: string
+  last_run_at?: string
+  next_run_at?: string
 }
 
 export function emptyAirflowTriggerConfig(): AirflowTriggerConfig {

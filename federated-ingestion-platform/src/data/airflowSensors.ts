@@ -62,6 +62,27 @@ export function requiresCheckColumn(type: ConnectionType): boolean {
   return TABLE_BASED_TYPES.includes(type)
 }
 
+// No real Airflow scheduler behind this yet, so "last run"/"next run" are mocked as a fixed
+// offset either side of the commit time — good enough for the Recent DAGs list without
+// pretending to parse the cron expression.
+export function mockDagRunTimes(committedAt: Date): { lastRunAt: string; nextRunAt: string } {
+  const sixHoursMs = 6 * 60 * 60 * 1000
+  return {
+    lastRunAt: new Date(committedAt.getTime() - sixHoursMs).toISOString(),
+    nextRunAt: new Date(committedAt.getTime() + sixHoursMs).toISOString(),
+  }
+}
+
+// Suggests a config name from whichever of the check connection / target pipeline are already
+// picked, so the DAG name field isn't left blank while the rest of the form is filled in. Only
+// ever pre-fills — the field stays a normal editable input the user can override at any time.
+export function suggestAirflowConfigName(connectionName: string | undefined, pipelineDisplay: string | undefined): string {
+  if (connectionName && pipelineDisplay) return `Check ${connectionName}, then trigger ${pipelineDisplay}`
+  if (connectionName) return `Check ${connectionName}`
+  if (pipelineDisplay) return `Trigger ${pipelineDisplay}`
+  return ''
+}
+
 /** The Airflow DAG definition the Config API would commit — a sensor gating a TriggerDagRunOperator. */
 export function buildAirflowDagConfig(config: AirflowTriggerConfig, checkConnection: ConnectionConfig | undefined, targetPipeline: PipelineConfig | undefined) {
   const sensorType = checkConnection ? sensorTypeForConnection(checkConnection.type) : 'gcs_object_sensor'
