@@ -4,6 +4,7 @@ import { emptyAirflowTriggerConfig } from '../types'
 import {
   CHECK_OBJECT_LABEL,
   airflowConfigDisplayName,
+  airflowUiUrl,
   buildAirflowDagConfig,
   mockDagRunTimes,
   requiresCheckColumn,
@@ -205,10 +206,10 @@ export default function AirflowConfigView({ configs, connections, pipelines, onC
 
       <div className="sub-tabs">
         <button type="button" className={`sub-tab ${subTab === 'configure' ? 'active' : ''}`} onClick={() => setSubTab('configure')}>
-          Configure
+          Build new Airflow
         </button>
         <button type="button" className={`sub-tab ${subTab === 'recent' ? 'active' : ''}`} onClick={() => setSubTab('recent')}>
-          Recent DAGs
+          Existing Airflow DAGs
         </button>
       </div>
 
@@ -530,7 +531,7 @@ export default function AirflowConfigView({ configs, connections, pipelines, onC
               {draft.commit_sha && (
                 <span className="hint">
                   Mock commit {draft.commit_sha} to {draft.git_path || `airflow/${slugify(previewConfigId)}.json`} — last committed{' '}
-                  {formatDateTime(draft.last_committed_at ?? null)}. See it on the <strong>Recent DAGs</strong> tab.
+                  {formatDateTime(draft.last_committed_at ?? null)}. See it on the <strong>Existing Airflow DAGs</strong> tab.
                 </span>
               )}
             </div>
@@ -567,8 +568,8 @@ function RecentDagsPanel({
   return (
     <div className="panel-body">
       <p className="hint" style={{ marginBottom: 12 }}>
-        DAGs that have been committed from the Configure tab. No Airflow instance is wired up yet, so the link below reopens the
-        config here rather than a real Airflow UI, and last/next run are mocked.
+        DAGs that have been committed from the Build new Airflow tab. No real Airflow instance is wired up yet, so the DAG link
+        below is a placeholder (airflow.example.com) rather than a live grid view, and last/next run are mocked.
       </p>
       <table className="table">
         <thead>
@@ -579,6 +580,7 @@ function RecentDagsPanel({
             <th>Last run</th>
             <th>Next run</th>
             <th>Commit</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
@@ -587,22 +589,27 @@ function RecentDagsPanel({
             return (
               <tr key={c.config_id}>
                 <td>
-                  <button type="button" className="link-button" onClick={() => onOpen(c)}>
+                  <a className="link-button" href={airflowUiUrl(c.config_id)} target="_blank" rel="noopener noreferrer">
                     {airflowConfigDisplayName(c)}
-                  </button>
+                  </a>
                 </td>
                 <td>{pipeline ? pipelineDisplayName(pipeline) : c.target_pipeline_id || '—'}</td>
                 <td className="mono">{c.schedule.expression}</td>
                 <td>{formatDateTime(c.last_run_at ?? null)}</td>
                 <td>{formatDateTime(c.next_run_at ?? null)}</td>
                 <td className="mono">{c.commit_sha ?? '—'}</td>
+                <td>
+                  <button type="button" className="btn small ghost" onClick={() => onOpen(c)}>
+                    Edit
+                  </button>
+                </td>
               </tr>
             )
           })}
           {committed.length === 0 && (
             <tr>
-              <td colSpan={6} style={{ color: 'var(--color-text-muted)', textAlign: 'center', padding: '18px 0' }}>
-                No DAGs committed yet — commit a config from the Configure tab to see it here.
+              <td colSpan={7} style={{ color: 'var(--color-text-muted)', textAlign: 'center', padding: '18px 0' }}>
+                No DAGs committed yet — commit a config from the Build new Airflow tab to see it here.
               </td>
             </tr>
           )}

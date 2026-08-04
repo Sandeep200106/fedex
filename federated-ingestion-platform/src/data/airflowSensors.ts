@@ -73,6 +73,13 @@ export function mockDagRunTimes(committedAt: Date): { lastRunAt: string; nextRun
   }
 }
 
+// No real Airflow webserver behind this app — points at a documentation-reserved example.com
+// host (same placeholder convention as other mock hosts in this codebase, e.g. the REST API
+// connection placeholder) so the DAG link behaves like a real one without resolving anywhere.
+export function airflowUiUrl(dagId: string): string {
+  return `https://airflow.example.com/dags/${encodeURIComponent(dagId)}/grid`
+}
+
 // Suggests a config name from whichever of the check connection / target pipeline are already
 // picked, so the DAG name field isn't left blank while the rest of the form is filled in. Only
 // ever pre-fills — the field stays a normal editable input the user can override at any time.
