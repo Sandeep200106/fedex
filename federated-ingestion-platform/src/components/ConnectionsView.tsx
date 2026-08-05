@@ -95,7 +95,7 @@ export default function ConnectionsView({ connections, onChange, prefillType, on
                 className={`connection-list-item ${selectedId === c.connection_id ? 'active' : ''}`}
                 onClick={() => selectForEdit(c)}
               >
-                <div>
+                <div className="connection-list-item-info">
                   <strong>{c.name || '(unnamed)'}</strong>
                   <div className="connection-list-meta">
                     {typeLabel} · {c.environment}

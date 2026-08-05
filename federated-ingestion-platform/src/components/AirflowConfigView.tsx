@@ -222,7 +222,7 @@ export default function AirflowConfigView({ configs, connections, pipelines, onC
       )}
 
       {subTab === 'configure' && (
-      <div className="connections-layout">
+      <div className="connections-layout tab-content-in">
         <div className="connections-list">
           <button type="button" className="btn primary small connections-new-btn" onClick={startNew}>
             + New Airflow config
@@ -236,7 +236,7 @@ export default function AirflowConfigView({ configs, connections, pipelines, onC
                 className={`connection-list-item ${selectedId === c.config_id ? 'active' : ''}`}
                 onClick={() => selectForEdit(c)}
               >
-                <div>
+                <div className="connection-list-item-info">
                   <strong>{c.name ? airflowConfigDisplayName(c) : '(unnamed)'}</strong>
                   <div className="connection-list-meta">→ {pipeline ? pipelineDisplayName(pipeline) : c.target_pipeline_id || 'no pipeline set'}</div>
                 </div>
@@ -561,7 +561,7 @@ function RecentDagsPanel({
     .sort((a, b) => (a.last_committed_at ?? '') < (b.last_committed_at ?? '') ? 1 : -1)
 
   return (
-    <div className="panel-body">
+    <div className="panel-body tab-content-in">
       <p className="hint" style={{ marginBottom: 12 }}>
         DAGs that have been committed from the Build new Airflow tab. No real Airflow instance is wired up yet, so the DAG link
         below is a placeholder (airflow.example.com) rather than a live grid view, and last/next run are mocked.

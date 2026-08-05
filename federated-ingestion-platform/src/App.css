@@ -296,6 +296,10 @@
   }
 }
 
+.tab-content-in {
+  animation: panel-in 0.18s ease;
+}
+
 .panel-header h2 {
   font-size: 18px;
   font-weight: 700;
@@ -1173,11 +1177,13 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s, transform 0.1s;
 }
 
 .connection-list-item:hover {
   border-color: var(--color-teal);
+  box-shadow: 0 4px 10px rgba(16, 24, 40, 0.06);
+  transform: translateY(-1px);
 }
 
 .connection-list-item.active {
@@ -1185,8 +1191,19 @@
   background: #f5eefb;
 }
 
+.connection-list-item-info {
+  min-width: 0;
+}
+
 .connection-list-item strong {
   font-size: 13px;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.connection-list-item .btn,
+.connection-list-item .row-actions {
+  flex-shrink: 0;
 }
 
 .connection-list-meta {
@@ -1761,13 +1778,15 @@
   font-size: 13px;
   font-weight: 600;
   padding: 8px 14px;
+  border-radius: 6px 6px 0 0;
   border-bottom: 2px solid transparent;
   cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
 }
 
 .sub-tab:hover {
   color: var(--color-text);
+  background: #f5eefb;
 }
 
 .sub-tab.active {
