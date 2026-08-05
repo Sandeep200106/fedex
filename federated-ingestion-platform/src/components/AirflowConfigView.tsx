@@ -267,7 +267,7 @@ export default function AirflowConfigView({ configs, connections, pipelines, onC
 
           <div className="form-grid">
             <div className="field full">
-              <label>Config name</label>
+              <label>DAG name</label>
               <input
                 value={draft.name}
                 placeholder="Check vendor orders file, then trigger merge"
