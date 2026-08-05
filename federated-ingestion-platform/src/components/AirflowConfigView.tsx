@@ -202,10 +202,6 @@ export default function AirflowConfigView({ configs, connections, pipelines, onC
     <div className="panel connections-panel">
       <div className="panel-header">
         <h2><IconAirflow className="icon-inline" />Airflow scheduling</h2>
-        <p>
-          Wire up a "check-then-trigger" DAG: poll a location until data is available, then trigger an already-deployed pipeline.
-          This is separate from the pipeline's own DAG — it just gates when that pipeline runs.
-        </p>
       </div>
 
       <div className="sub-tabs">
