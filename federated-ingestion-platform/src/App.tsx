@@ -547,7 +547,7 @@ export default function App() {
 
       {view === 'history' && (
         <div className="app-body" style={{ gridTemplateColumns: '1fr' }}>
-          <JobHistoryView runs={jobRuns} onRerun={rerunJob} onOpenPipeline={openPipelineInAirflow} />
+          <JobHistoryView runs={jobRuns} pipelines={pipelines} onRerun={rerunJob} onOpenPipeline={openPipelineInAirflow} />
         </div>
       )}
 

@@ -1,10 +1,12 @@
 import { Fragment, useMemo, useState } from 'react'
-import type { JobRun, RunState } from '../types'
+import type { JobRun, PipelineConfig, RunState } from '../types'
 import { formatDateTime, formatDuration } from '../utils/format'
 import { buildLogAnalysisPrompt, callLlm, getLlmSettings, isLlmConfigured, mockLogAnalysis } from '../rag/llmClient'
+import { pipelineDisplayName } from '../data/dataServices'
 
 interface JobHistoryViewProps {
   runs: JobRun[]
+  pipelines: PipelineConfig[]
   onRerun: (run: JobRun) => void
   onOpenPipeline: (pipelineId: string) => void
 }
@@ -28,7 +30,7 @@ interface Analysis {
   isMock?: boolean
 }
 
-export default function JobHistoryView({ runs, onRerun, onOpenPipeline }: JobHistoryViewProps) {
+export default function JobHistoryView({ runs, pipelines, onRerun, onOpenPipeline }: JobHistoryViewProps) {
   const [pipelineFilter, setPipelineFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState<RunState | 'all'>('all')
   const [expandedRunId, setExpandedRunId] = useState<string | null>(null)
@@ -76,11 +78,14 @@ export default function JobHistoryView({ runs, onRerun, onOpenPipeline }: JobHis
           <label>Pipeline</label>
           <select value={pipelineFilter} onChange={(e) => setPipelineFilter(e.target.value)}>
             <option value="all">All pipelines</option>
-            {pipelineIds.map((id) => (
-              <option key={id} value={id}>
-                {id}
-              </option>
-            ))}
+            {pipelineIds.map((id) => {
+              const pipeline = pipelines.find((p) => p.pipeline_id === id)
+              return (
+                <option key={id} value={id}>
+                  {pipeline ? pipelineDisplayName(pipeline) : id}
+                </option>
+              )
+            })}
           </select>
         </div>
         <div className="field" style={{ minWidth: 180 }}>
@@ -111,6 +116,7 @@ export default function JobHistoryView({ runs, onRerun, onOpenPipeline }: JobHis
           {filtered.map((run) => {
             const isExpanded = expandedRunId === run.run_id
             const analysis = analyses[run.run_id]
+            const pipeline = pipelines.find((p) => p.pipeline_id === run.pipeline_id)
             return (
               <Fragment key={run.run_id}>
                 <tr
@@ -133,7 +139,7 @@ export default function JobHistoryView({ runs, onRerun, onOpenPipeline }: JobHis
                         onOpenPipeline(run.pipeline_id)
                       }}
                     >
-                      {run.pipeline_id}
+                      {pipeline ? pipelineDisplayName(pipeline) : run.pipeline_id}
                     </button>
                     {run.dq_pattern_key && (
                       <span className="badge" style={{ marginLeft: 8 }} title="This failure is a DQ check, not an infra error — rerunning it checks whether that check has been adopted into the DQ framework.">
