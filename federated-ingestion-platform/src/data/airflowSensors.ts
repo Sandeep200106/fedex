@@ -82,6 +82,13 @@ export function airflowUiUrl(dagId: string): string {
   return `https://airflow.example.com/dags/${encodeURIComponent(dagId)}/grid`
 }
 
+// Same placeholder host, but for one specific run within a DAG's grid view — matches real
+// Airflow's own URL shape (?dag_run_id=...) for deep-linking a single run instead of the DAG
+// overview.
+export function airflowRunUrl(dagId: string, runId: string): string {
+  return `${airflowUiUrl(dagId)}?dag_run_id=${encodeURIComponent(runId)}`
+}
+
 // Suggests a config name from whichever of the check connection / target pipeline are already
 // picked, so the DAG name field isn't left blank while the rest of the form is filled in. Only
 // ever pre-fills — the field stays a normal editable input the user can override at any time.

@@ -3,6 +3,8 @@ import type { JobRun, PipelineConfig, RunState } from '../types'
 import { formatDateTime, formatDuration } from '../utils/format'
 import { buildLogAnalysisPrompt, callLlm, getLlmSettings, isLlmConfigured, mockLogAnalysis } from '../rag/llmClient'
 import { pipelineDisplayName } from '../data/dataServices'
+import { airflowRunUrl } from '../data/airflowSensors'
+import { IconAirflow } from './icons'
 
 interface JobHistoryViewProps {
   runs: JobRun[]
@@ -147,7 +149,18 @@ export default function JobHistoryView({ runs, pipelines, onRerun, onOpenPipelin
                       </span>
                     )}
                   </td>
-                  <td className="mono">{run.run_id}</td>
+                  <td className="mono">
+                    <a
+                      className="link-button"
+                      href={airflowRunUrl(run.dag_id, run.run_id)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="Open this run in Airflow"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <IconAirflow className="icon-inline" />{run.run_id}
+                    </a>
+                  </td>
                   <td>
                     <StatusBadge state={run.state} />
                   </td>
