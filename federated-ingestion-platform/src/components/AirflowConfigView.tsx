@@ -580,6 +580,7 @@ function RecentDagsPanel({
             <th>Last run</th>
             <th>Next run</th>
             <th>Commit</th>
+            <th>Airflow link</th>
             <th></th>
           </tr>
         </thead>
@@ -588,16 +589,17 @@ function RecentDagsPanel({
             const pipeline = pipelines.find((p) => p.pipeline_id === c.target_pipeline_id)
             return (
               <tr key={c.config_id}>
-                <td>
-                  <a className="link-button" href={airflowUiUrl(c.config_id)} target="_blank" rel="noopener noreferrer">
-                    {airflowConfigDisplayName(c)}
-                  </a>
-                </td>
+                <td>{airflowConfigDisplayName(c)}</td>
                 <td>{pipeline ? pipelineDisplayName(pipeline) : c.target_pipeline_id || '—'}</td>
                 <td className="mono">{c.schedule.expression}</td>
                 <td>{formatDateTime(c.last_run_at ?? null)}</td>
                 <td>{formatDateTime(c.next_run_at ?? null)}</td>
                 <td className="mono">{c.commit_sha ?? '—'}</td>
+                <td>
+                  <a className="link-button" href={airflowUiUrl(c.config_id)} target="_blank" rel="noopener noreferrer">
+                    Open in Airflow
+                  </a>
+                </td>
                 <td>
                   <button type="button" className="btn small ghost" onClick={() => onOpen(c)}>
                     Edit
@@ -608,7 +610,7 @@ function RecentDagsPanel({
           })}
           {committed.length === 0 && (
             <tr>
-              <td colSpan={7} style={{ color: 'var(--color-text-muted)', textAlign: 'center', padding: '18px 0' }}>
+              <td colSpan={8} style={{ color: 'var(--color-text-muted)', textAlign: 'center', padding: '18px 0' }}>
                 No DAGs committed yet — commit a config from the Build new Airflow tab to see it here.
               </td>
             </tr>
