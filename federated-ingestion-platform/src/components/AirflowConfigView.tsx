@@ -151,7 +151,10 @@ export default function AirflowConfigView({ configs, connections, pipelines, onC
 
   function handleSave() {
     if (issues.length > 0) return
-    const configId = draft.name.trim()
+    // Airflow dag_ids can't contain spaces/commas, so the config_id — which doubles as the
+    // dag_id in buildAirflowDagConfig — is always derived as a slug. draft.name stays the
+    // freeform human label shown next to it (e.g. in the config list), unslugged.
+    const configId = slugify(draft.name.trim())
     const finalized: AirflowTriggerConfig = {
       ...draft,
       config_id: configId,
@@ -192,7 +195,7 @@ export default function AirflowConfigView({ configs, connections, pipelines, onC
 
   const isDirty = originalId ? JSON.stringify(configs.find((c) => c.config_id === originalId)) !== JSON.stringify(draft) : true
   const objectLabel = checkConnection ? CHECK_OBJECT_LABEL[checkConnection.type] : undefined
-  const previewConfigId = draft.name.trim()
+  const previewConfigId = slugify(draft.name.trim())
   const dagConfig = buildAirflowDagConfig({ ...draft, config_id: previewConfigId || draft.config_id }, checkConnection, targetPipeline)
 
   return (

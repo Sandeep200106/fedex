@@ -7,7 +7,7 @@ const STORAGE_KEY = 'pipeline-builder-airflow-triggers'
 // Airflow DAGs tab isn't empty on first load.
 export const DEFAULT_AIRFLOW_TRIGGERS: AirflowTriggerConfig[] = [
   {
-    config_id: 'Check vendor orders file, then trigger merge',
+    config_id: 'check_vendor_orders_file_then_trigger_merge',
     name: 'Check vendor orders file, then trigger merge',
     check_connection_ref: 'conn_mediation_sftp_prod',
     check_object: '/inbound/vendor/orders_dt={{ds}}.csv',
@@ -24,7 +24,7 @@ export const DEFAULT_AIRFLOW_TRIGGERS: AirflowTriggerConfig[] = [
     next_run_at: '2026-08-04T05:30:00Z',
   },
   {
-    config_id: 'Check inventory extract, then trigger full load',
+    config_id: 'check_inventory_extract_then_trigger_full_load',
     name: 'Check inventory extract, then trigger full load',
     check_connection_ref: 'conn_inventory_mysql_prod',
     check_object: 'inventory.stock_levels',
@@ -44,7 +44,7 @@ export const DEFAULT_AIRFLOW_TRIGGERS: AirflowTriggerConfig[] = [
     next_run_at: '2026-08-05T02:00:00Z',
   },
   {
-    config_id: 'Check billing replication readiness, then trigger CDC load',
+    config_id: 'check_billing_replication_readiness_then_trigger_cdc_load',
     name: 'Check billing replication readiness, then trigger CDC load',
     check_connection_ref: 'conn_billing_oracle_prod',
     check_object: 'BILLING.ORDERS',
@@ -64,7 +64,7 @@ export const DEFAULT_AIRFLOW_TRIGGERS: AirflowTriggerConfig[] = [
     next_run_at: '2026-08-04T06:00:00Z',
   },
   {
-    config_id: 'Check clickstream export marker, then trigger CDC copy',
+    config_id: 'check_clickstream_export_marker_then_trigger_cdc_copy',
     name: 'Check clickstream export marker, then trigger CDC copy',
     check_connection_ref: 'conn_gcs_lake_prod',
     check_object: 'raw/clickstream_events/dt={{ds}}/_SUCCESS',
@@ -85,13 +85,22 @@ export const DEFAULT_AIRFLOW_TRIGGERS: AirflowTriggerConfig[] = [
 // Bump whenever DEFAULT_AIRFLOW_TRIGGERS entries are renamed, added, removed, or otherwise
 // edited, so a browser whose saved version is behind gets healed on next load — same pattern
 // as CONNECTIONS_VERSION in connectionsStore.ts.
-const TRIGGERS_VERSION = 5
+const TRIGGERS_VERSION = 6
 const VERSION_KEY = 'pipeline-builder-airflow-triggers-version'
 
 // config_ids that used to be in DEFAULT_AIRFLOW_TRIGGERS and were renamed/replaced (not just
 // added to) — listed explicitly so healing can drop the orphaned old copy instead of mistaking
 // it for a config the user genuinely added themselves.
-const RETIRED_CONFIG_IDS = new Set(['sense_vendor_orders_file_landed', 'sense_inventory_extract_ready'])
+const RETIRED_CONFIG_IDS = new Set([
+  'sense_vendor_orders_file_landed',
+  'sense_inventory_extract_ready',
+  // v5 seeded these with the raw display name (spaces + commas) as config_id — v6 replaced
+  // them with proper slugs since that value doubles as the Airflow dag_id.
+  'Check vendor orders file, then trigger merge',
+  'Check inventory extract, then trigger full load',
+  'Check billing replication readiness, then trigger CDC load',
+  'Check clickstream export marker, then trigger CDC copy',
+])
 
 function healToCurrentDefaults(stored: AirflowTriggerConfig[]): AirflowTriggerConfig[] {
   const defaultIds = new Set(DEFAULT_AIRFLOW_TRIGGERS.map((c) => c.config_id))

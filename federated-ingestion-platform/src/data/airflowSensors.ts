@@ -48,8 +48,10 @@ export function sensorOperatorLabel(type: ConnectionType): string {
 // Same naming standard as pipelineDisplayName in dataServices.ts, applied to Airflow
 // scheduling configs — prefixed with "Airflow" so it's visible at a glance alongside
 // "Dataflow"/"Dataproc"-prefixed pipeline names wherever the two are listed together.
+// Prefers config_id (always a slug — see handleSave in AirflowConfigView) over the freeform
+// name field, since real Airflow dag_ids can't contain spaces or commas.
 export function airflowConfigDisplayName(config: Pick<AirflowTriggerConfig, 'name' | 'config_id'>): string {
-  return `Airflow - ${config.name || config.config_id}`
+  return `Airflow - ${config.config_id || config.name}`
 }
 
 // Table-backed connections (traditional RDBMS + BigQuery) have no file to sense — the
