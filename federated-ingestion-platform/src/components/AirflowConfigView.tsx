@@ -214,14 +214,7 @@ export default function AirflowConfigView({ configs, connections, pipelines, onC
       </div>
 
       {subTab === 'recent' && (
-        <RecentDagsPanel
-          configs={configs}
-          pipelines={pipelines}
-          onOpen={(c) => {
-            selectForEdit(c)
-            setSubTab('configure')
-          }}
-        />
+        <RecentDagsPanel configs={configs} pipelines={pipelines} />
       )}
 
       {subTab === 'configure' && (
@@ -555,11 +548,9 @@ export default function AirflowConfigView({ configs, connections, pipelines, onC
 function RecentDagsPanel({
   configs,
   pipelines,
-  onOpen,
 }: {
   configs: AirflowTriggerConfig[]
   pipelines: PipelineConfig[]
-  onOpen: (config: AirflowTriggerConfig) => void
 }) {
   const committed = configs
     .filter((c) => c.committed)
@@ -581,7 +572,6 @@ function RecentDagsPanel({
             <th>Next run</th>
             <th>Commit</th>
             <th>Airflow link</th>
-            <th></th>
           </tr>
         </thead>
         <tbody>
@@ -600,17 +590,12 @@ function RecentDagsPanel({
                     Open in Airflow
                   </a>
                 </td>
-                <td>
-                  <button type="button" className="btn small ghost" onClick={() => onOpen(c)}>
-                    Edit
-                  </button>
-                </td>
               </tr>
             )
           })}
           {committed.length === 0 && (
             <tr>
-              <td colSpan={8} style={{ color: 'var(--color-text-muted)', textAlign: 'center', padding: '18px 0' }}>
+              <td colSpan={7} style={{ color: 'var(--color-text-muted)', textAlign: 'center', padding: '18px 0' }}>
                 No DAGs committed yet — commit a config from the Build new Airflow tab to see it here.
               </td>
             </tr>
