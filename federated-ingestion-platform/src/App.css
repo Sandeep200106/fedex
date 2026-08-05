@@ -1816,3 +1816,11 @@
 .link-button:hover {
   color: var(--color-teal);
 }
+
+.icon-inline {
+  width: 16px;
+  height: 16px;
+  vertical-align: -3px;
+  margin-right: 6px;
+  flex-shrink: 0;
+}

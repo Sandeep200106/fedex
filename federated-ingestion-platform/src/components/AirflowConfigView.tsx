@@ -11,6 +11,7 @@ import {
   sensorOperatorLabel,
   suggestAirflowConfigName,
 } from '../data/airflowSensors'
+import { IconAirflow } from './icons'
 import { pipelineDisplayName } from '../data/dataServices'
 import { CONNECTION_TYPES } from '../data/templates'
 import { FILTER_OPERATOR_OPTIONS } from '../data/filterOperators'
@@ -197,7 +198,7 @@ export default function AirflowConfigView({ configs, connections, pipelines, onC
   return (
     <div className="panel connections-panel">
       <div className="panel-header">
-        <h2>Airflow scheduling</h2>
+        <h2><IconAirflow className="icon-inline" />Airflow scheduling</h2>
         <p>
           Wire up a "check-then-trigger" DAG: poll a location until data is available, then trigger an already-deployed pipeline.
           This is separate from the pipeline's own DAG — it just gates when that pipeline runs.
@@ -206,10 +207,10 @@ export default function AirflowConfigView({ configs, connections, pipelines, onC
 
       <div className="sub-tabs">
         <button type="button" className={`sub-tab ${subTab === 'configure' ? 'active' : ''}`} onClick={() => setSubTab('configure')}>
-          Build new Airflow
+          <IconAirflow className="icon-inline" />Build new Airflow
         </button>
         <button type="button" className={`sub-tab ${subTab === 'recent' ? 'active' : ''}`} onClick={() => setSubTab('recent')}>
-          Existing Airflow DAGs
+          <IconAirflow className="icon-inline" />Existing Airflow DAGs
         </button>
       </div>
 
@@ -587,7 +588,7 @@ function RecentDagsPanel({
                 <td className="mono">{c.commit_sha ?? '—'}</td>
                 <td>
                   <a className="link-button" href={airflowUiUrl(c.config_id)} target="_blank" rel="noopener noreferrer">
-                    Open in Airflow
+                    <IconAirflow className="icon-inline" />Open in Airflow
                   </a>
                 </td>
               </tr>

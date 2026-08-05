@@ -70,6 +70,16 @@ export function IconConnections({ className }: IconProps) {
   )
 }
 
+export function IconAirflow({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="M12 12c0-3.5 2-6 5-6a3 3 0 010 6h-5" />
+      <path d="M12 12c-3 2-3.5 5-1.5 7a3 3 0 004-4.5" />
+      <path d="M12 12c-3.5 0-6-2-6-5a3 3 0 016 0v5" />
+    </svg>
+  )
+}
+
 export function IconArrow({ className }: IconProps) {
   return (
     <svg {...base} width={16} height={16} viewBox="0 0 24 24" className={className}>
