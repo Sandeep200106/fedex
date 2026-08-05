@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import { LocalVectorStore, type RagChunk } from '../rag/vectorStore'
 import { RAG_CORPUS } from '../rag/corpus'
-import { buildRagPrompt, callLlm, getLlmSettings, isLlmConfigured, mockAnswerFromChunks } from '../rag/llmClient'
+import { buildQueryRewritePrompt, buildRagPrompt, callLlm, getLlmSettings, isLlmConfigured, mockAnswerFromChunks } from '../rag/llmClient'
+import { getPineconeSettings, isPineconeConfigured, pineconeSearch } from '../rag/pineconeClient'
 import { IconAssistant } from './icons'
 import type { DqExecution, DqRuleSet, JobRun } from '../types'
 import { formatDateTime } from '../utils/format'
@@ -67,8 +68,14 @@ export default function ChatWidget({ open, onOpenChange, currentLocation, jobRun
     () => buildFailureChunks(jobRuns, dqExecutions, dqRuleSets),
     [jobRuns, dqExecutions, dqRuleSets],
   )
-  const store = useMemo(() => new LocalVectorStore([...RAG_CORPUS, ...failureChunks]), [failureChunks])
+  // Fallback-only local search — used when Pinecone isn't configured, or its call fails.
+  const fallbackStore = useMemo(() => new LocalVectorStore([...RAG_CORPUS, ...failureChunks]), [failureChunks])
+  // Failure chunks are generated fresh from live app state every render, so they can't be
+  // pre-ingested into Pinecone — they're always matched locally and merged in alongside
+  // whatever Pinecone returns for the static docs.
+  const failureStore = useMemo(() => new LocalVectorStore(failureChunks), [failureChunks])
   const settings = useMemo(() => getLlmSettings(), [])
+  const pineconeSettings = useMemo(() => getPineconeSettings(), [])
   const [messages, setMessages] = useState<ChatEntry[]>([
     {
       role: 'assistant',
@@ -91,8 +98,31 @@ export default function ChatWidget({ open, onOpenChange, currentLocation, jobRun
     setInput('')
     setLoading(true)
 
-    const results = store.search(question, 3)
-    const chunks = results.map((r) => r.chunk)
+    // Rewrite before retrieval only — the ORIGINAL question is still what gets answered below.
+    // A vague message like "I wanted to develop ingestion pipeline" rewrites into something
+    // closer to how the docs are phrased, which is what actually improves what comes back.
+    let searchQuery = question
+    if (isLlmConfigured(settings)) {
+      try {
+        const rewritten = await callLlm(settings, buildQueryRewritePrompt(question))
+        if (rewritten.trim()) searchQuery = rewritten.trim()
+      } catch {
+        // Fall back to searching with the raw question.
+      }
+    }
+
+    const failureHits = failureStore.search(searchQuery, 2).map((r) => r.chunk)
+    let chunks: RagChunk[]
+    if (isPineconeConfigured(pineconeSettings)) {
+      try {
+        const corpusHits = await pineconeSearch(pineconeSettings, searchQuery, 3)
+        chunks = [...failureHits, ...corpusHits]
+      } catch {
+        chunks = fallbackStore.search(searchQuery, 3).map((r) => r.chunk)
+      }
+    } else {
+      chunks = fallbackStore.search(searchQuery, 3).map((r) => r.chunk)
+    }
 
     if (isLlmConfigured(settings)) {
       try {

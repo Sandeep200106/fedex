@@ -11,6 +11,12 @@ services:
         sync: false
       - key: VITE_LLM_BASE_URL
         sync: false
+      - key: VITE_PINECONE_API_KEY
+        sync: false
+      - key: VITE_PINECONE_INDEX_HOST
+        sync: false
+      - key: VITE_PINECONE_NAMESPACE
+        sync: false
     routes:
       - type: rewrite
         source: /*

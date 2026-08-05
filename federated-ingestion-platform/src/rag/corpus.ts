@@ -1,8 +1,11 @@
 import type { RagChunk } from './vectorStore'
-import { TRANSFORM_FUNCTIONS } from '../data/transformFunctions'
-import { CONNECTION_FIELD_CONFIG, CONNECTION_TYPES } from '../data/templates'
 
 const STATIC_CHUNKS: RagChunk[] = [
+  {
+    id: 'getting-started',
+    title: 'How do I build/develop a new ingestion pipeline?',
+    text: 'To build a new pipeline: click the "Build Pipeline" tab in the top navigation (or the "Start building" button on the Home tab). That opens a step-by-step wizard: Template (pick a source-to-target template, e.g. PostgreSQL to GCS or Oracle CDC to BigQuery) → Source (pick a saved connection of the required type) → Target (same, for the target type) → Mapping (map source columns to target columns, or set file format/load mode for file targets) → Details (name the pipeline, add transformations, set the Airflow schedule and which GCP data service runs it) → Review (see the generated JSON, commit to GitHub, and run a dummy execution). If you have not set up the source/target systems yet, add them once in the Connections tab first — every pipeline picks from that same reusable list instead of re-entering connection details each time.',
+  },
   {
     id: 'product-overview',
     title: 'What is Pipeline Builder',
@@ -96,7 +99,7 @@ const STATIC_CHUNKS: RagChunk[] = [
   {
     id: 'assistant-overview',
     title: 'Assistant chat widget',
-    text: 'The Assistant is a chat widget in the bottom-right corner of every tab, not a separate tab of its own — click the round chat bubble to open it. It is a retrieval-augmented (RAG) chatbot: your question is matched against a local, in-browser search index built from this documentation (a local TF-IDF vector store, not an external service like Pinecone), the most relevant chunks are retrieved, and those chunks are sent to a language model along with your question to produce an answer. The assistant is pre-configured — there is nothing to set up in the UI, you just ask a question. If the language model call cannot complete for any reason, the assistant falls back to showing the retrieved documentation directly instead of a generated answer.',
+    text: 'The Assistant is a chat widget in the bottom-right corner of every tab, not a separate tab of its own — click the round chat bubble to open it. It is a retrieval-augmented (RAG) chatbot: your question is embedded and matched against this documentation in a real Pinecone vector database index (semantic search, not keyword matching), the most relevant chunks are retrieved, and those chunks are sent to a language model along with your question to produce an answer. Recent job/data-quality failures are matched separately with a small local keyword search and merged in alongside the Pinecone results. The assistant is pre-configured — there is nothing to set up in the UI, you just ask a question. If the vector search or the language model call cannot complete for any reason, the assistant falls back to a local, in-browser keyword search over the same documentation instead of a generated answer.',
   },
   {
     id: 'faq-type-locked',
@@ -105,32 +108,14 @@ const STATIC_CHUNKS: RagChunk[] = [
   },
   {
     id: 'faq-security',
-    title: 'FAQ: How does the Assistant\'s language model access work, and is it safe?',
-    text: 'The Assistant calls a language model API directly from the browser using a pre-configured key — there is no settings screen and nothing to type in. This keeps the UI simple, but it is a UI-only demo with no backend, so the key is bundled into the app and visible to anyone inspecting this browser session. That is acceptable for an internal/local demo but is not a safe pattern once this app is deployed anywhere less trusted — at that point the call should move behind a real backend so the key is never sent to the browser at all.',
+    title: 'FAQ: How does the Assistant\'s language model and vector search access work, and is it safe?',
+    text: 'The Assistant calls both a language model API and a Pinecone vector database directly from the browser using pre-configured keys — there is no settings screen and nothing to type in. This keeps the UI simple, but it is a UI-only demo with no backend, so both keys are bundled into the app and visible to anyone inspecting this browser session. That is acceptable for an internal/local demo but is not a safe pattern once this app is deployed anywhere less trusted — at that point both calls should move behind a real backend so neither key is ever sent to the browser at all.',
   },
 ]
 
-function buildTransformFunctionChunks(): RagChunk[] {
-  return Object.entries(TRANSFORM_FUNCTIONS).map(([fn, spec]) => ({
-    id: `transform-fn-${fn}`,
-    title: `Transform function: ${fn}`,
-    text: `${spec.label}. Used as a "transform" type transformation applied to one column.${spec.argLabels.length ? ` It takes these parameters: ${spec.argLabels.join(', ')}.` : ' It takes no extra parameters.'}`,
-  }))
-}
-
-function buildConnectionTypeChunks(): RagChunk[] {
-  return CONNECTION_TYPES.map(({ value, label }) => {
-    const fields = CONNECTION_FIELD_CONFIG[value]
-    const parts: string[] = []
-    if (fields.host.show) parts.push(`${fields.host.label}${fields.host.required ? '' : ' (optional)'}`)
-    if (fields.port.show) parts.push(`Port${fields.port.required ? '' : ' (optional)'}`)
-    if (fields.database.show) parts.push(`${fields.database.label}${fields.database.required ? '' : ' (optional)'}`)
-    return {
-      id: `connection-type-${value}`,
-      title: `Connection type: ${label}`,
-      text: `A ${label} connection asks for: ${parts.join(', ')}, plus owner, auth method, secret reference, and tags.`,
-    }
-  })
-}
-
-export const RAG_CORPUS: RagChunk[] = [...STATIC_CHUNKS, ...buildTransformFunctionChunks(), ...buildConnectionTypeChunks()]
+// Per-transform-function and per-connection-type chunks used to be generated here, one chunk
+// each — but every one of them just duplicated a sentence already in wizard-details (lists all
+// transform functions) or connections-tab (lists all connection types' fields) above, so they
+// only added noise to the vector index without adding information. Dropped in favor of those
+// existing prose chunks.
+export const RAG_CORPUS: RagChunk[] = STATIC_CHUNKS

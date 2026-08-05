@@ -62,6 +62,27 @@ export async function callLlm(settings: LlmSettings, messages: ChatMessage[]): P
   return content
 }
 
+/**
+ * A query-rewrite pass, run before retrieval: takes whatever the user actually typed (which
+ * can be vague, e.g. "I wanted to develop ingestion pipeline") and turns it into a clearer,
+ * standalone search query closer to how this app's docs are phrased, so vector search has a
+ * better chance of surfacing the right chunk. The ORIGINAL question (not this rewrite) is
+ * still what gets answered — see buildRagPrompt — this only changes what gets searched for.
+ */
+export function buildQueryRewritePrompt(question: string): ChatMessage[] {
+  return [
+    {
+      role: 'system',
+      content:
+        'Rewrite the user\'s message into a single, clear, specific search query for a documentation search engine covering a data pipeline builder web app (steps: Template, Source, Target, Mapping, Details, Review; plus Connections, Job History, Data Quality, Lineage, Airflow scheduling tabs). Resolve vague phrasing into what the user is actually trying to do or find. Respond with ONLY the rewritten query text — no quotes, no explanation, no prefix.',
+    },
+    {
+      role: 'user',
+      content: question,
+    },
+  ]
+}
+
 export function buildRagPrompt(question: string, chunks: RagChunk[], userLocation?: string): ChatMessage[] {
   const context = chunks.map((c) => `### ${c.title}\n${c.text}`).join('\n\n')
   const locationLine = userLocation ? `The user is currently on: ${userLocation}.\n\n` : ''
@@ -69,7 +90,7 @@ export function buildRagPrompt(question: string, chunks: RagChunk[], userLocatio
     {
       role: 'system',
       content:
-        'You are an assistant embedded in a data pipeline builder UI, helping users who may be stuck or confused about how the platform works, including recent pipeline/data-quality failures. Answer the user\'s question using ONLY the provided context. If the context includes a recent failed run or data quality failure relevant to the question, use it to give a specific, actionable answer instead of a generic one. If the context does not cover it, say so plainly instead of guessing. Keep answers concise and practical.',
+        'You are an assistant embedded in a data pipeline builder UI, helping users who may be stuck or confused about how the platform works, including recent pipeline/data-quality failures. Answer the user\'s question using ONLY the provided context. Lead with a direct, concrete answer or the exact next action to take (e.g. which tab/button) before any explanation — do not hedge with "possibly" or "you would typically need to" when the context actually states the answer. If the context includes a recent failed run or data quality failure relevant to the question, use it to give a specific, actionable answer instead of a generic one. If the context does not cover it, say so plainly instead of guessing. Keep answers concise and practical.',
     },
     {
       role: 'user',
