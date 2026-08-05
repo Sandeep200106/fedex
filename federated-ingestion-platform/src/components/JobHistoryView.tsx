@@ -2,7 +2,6 @@ import { Fragment, useMemo, useState } from 'react'
 import type { JobRun, RunState } from '../types'
 import { formatDateTime, formatDuration } from '../utils/format'
 import { buildLogAnalysisPrompt, callLlm, getLlmSettings, isLlmConfigured, mockLogAnalysis } from '../rag/llmClient'
-import { IconAirflow } from './icons'
 
 interface JobHistoryViewProps {
   runs: JobRun[]
@@ -134,7 +133,7 @@ export default function JobHistoryView({ runs, onRerun, onOpenPipeline }: JobHis
                         onOpenPipeline(run.pipeline_id)
                       }}
                     >
-                      <IconAirflow className="icon-inline" />{run.pipeline_id}
+                      {run.pipeline_id}
                     </button>
                     {run.dq_pattern_key && (
                       <span className="badge" style={{ marginLeft: 8 }} title="This failure is a DQ check, not an infra error — rerunning it checks whether that check has been adopted into the DQ framework.">
