@@ -59,16 +59,23 @@ import type {
 } from './types'
 import { slugify } from './utils/slug'
 
-type AppView = 'home' | 'build' | 'history' | 'quality' | 'connections' | 'lineage' | 'airflow'
+type AppView = 'home' | 'build' | 'quality' | 'connections' | 'airflow'
+// Job History and Lineage live as sub-tabs inside the Build Pipeline view rather than their
+// own top-level nav entries — see buildSubTab below.
+type BuildSubTab = 'pipeline' | 'history' | 'lineage'
 
 const VIEW_LABELS: Record<AppView, string> = {
   home: 'Home tab',
   build: 'Build Pipeline wizard',
-  history: 'Job History tab',
   quality: 'Data Quality tab',
   connections: 'Connections tab',
-  lineage: 'Lineage tab',
   airflow: 'Airflow Scheduling tab',
+}
+
+const BUILD_SUBTAB_LABELS: Record<BuildSubTab, string> = {
+  pipeline: 'Build Pipeline wizard',
+  history: 'Job History tab',
+  lineage: 'Lineage tab',
 }
 
 const STEPS: StepDef[] = [
@@ -82,6 +89,7 @@ const STEPS: StepDef[] = [
 
 export default function App() {
   const [view, setView] = useState<AppView>('home')
+  const [buildSubTab, setBuildSubTab] = useState<BuildSubTab>('pipeline')
   const [chatOpen, setChatOpen] = useState(false)
   const [step, setStep] = useState(0)
   const [maxReached, setMaxReached] = useState(0)
@@ -289,6 +297,7 @@ export default function App() {
     setPipelineOwner('data-engineering')
     setGitPath('pipelines/orders_sync_daily.json')
     setView('build')
+    setBuildSubTab('pipeline')
     setStep(0)
     setMaxReached(5)
   }
@@ -309,7 +318,8 @@ export default function App() {
       log_excerpt: '[mock] Triggered manually from Federated Ingestion Platform UI — dummy execution starting…',
     }
     setJobRuns((prev) => [newRun, ...prev])
-    setView('history')
+    setView('build')
+    setBuildSubTab('history')
     setTimeout(() => {
       setJobRuns((prev) =>
         prev.map((r) =>
@@ -525,12 +535,6 @@ export default function App() {
         <button type="button" className={`app-tab ${view === 'build' ? 'active' : ''}`} onClick={() => setView('build')}>
           Build Pipeline
         </button>
-        <button type="button" className={`app-tab ${view === 'history' ? 'active' : ''}`} onClick={() => setView('history')}>
-          Job History
-        </button>
-        <button type="button" className={`app-tab ${view === 'lineage' ? 'active' : ''}`} onClick={() => setView('lineage')}>
-          Lineage
-        </button>
         <button type="button" className={`app-tab ${view === 'airflow' ? 'active' : ''}`} onClick={() => setView('airflow')}>
           Airflow Scheduling
         </button>
@@ -541,13 +545,14 @@ export default function App() {
 
       {view === 'home' && (
         <div className="app-body" style={{ gridTemplateColumns: '1fr' }}>
-          <HomeView onStartBuilding={() => setView('build')} onOpenChat={() => setChatOpen(true)} onLoadDemo={loadDemoPipeline} />
-        </div>
-      )}
-
-      {view === 'history' && (
-        <div className="app-body" style={{ gridTemplateColumns: '1fr' }}>
-          <JobHistoryView runs={jobRuns} pipelines={pipelines} onRerun={rerunJob} onOpenPipeline={openPipelineInAirflow} />
+          <HomeView
+            onStartBuilding={() => {
+              setView('build')
+              setBuildSubTab('pipeline')
+            }}
+            onOpenChat={() => setChatOpen(true)}
+            onLoadDemo={loadDemoPipeline}
+          />
         </div>
       )}
 
@@ -561,17 +566,6 @@ export default function App() {
             onRunNow={runDqCheckNow}
             frameworkRules={frameworkRules}
             onAdoptIntoFramework={adoptIntoFramework}
-          />
-        </div>
-      )}
-
-      {view === 'lineage' && (
-        <div className="app-body" style={{ gridTemplateColumns: '1fr' }}>
-          <LineageView
-            pipelines={pipelines}
-            connections={connections}
-            airflowTriggers={airflowTriggers}
-            onBuildNew={() => setView('build')}
           />
         </div>
       )}
@@ -594,7 +588,10 @@ export default function App() {
             connections={connections}
             pipelines={pipelines}
             onChange={setAirflowTriggers}
-            onBuildPipeline={() => setView('build')}
+            onBuildPipeline={() => {
+              setView('build')
+              setBuildSubTab('pipeline')
+            }}
             focusPipelineId={airflowFocusPipelineId}
             onFocusConsumed={() => setAirflowFocusPipelineId(null)}
           />
@@ -602,7 +599,40 @@ export default function App() {
       )}
 
       {view === 'build' && (
-        <div className="app-body">
+        <>
+          <div className="build-subnav-wrap">
+            <div className="sub-tabs">
+              <button type="button" className={`sub-tab ${buildSubTab === 'pipeline' ? 'active' : ''}`} onClick={() => setBuildSubTab('pipeline')}>
+                Build Pipeline
+              </button>
+              <button type="button" className={`sub-tab ${buildSubTab === 'history' ? 'active' : ''}`} onClick={() => setBuildSubTab('history')}>
+                Job History
+              </button>
+              <button type="button" className={`sub-tab ${buildSubTab === 'lineage' ? 'active' : ''}`} onClick={() => setBuildSubTab('lineage')}>
+                Lineage
+              </button>
+            </div>
+          </div>
+
+          {buildSubTab === 'history' && (
+            <div className="app-body tab-content-in" style={{ gridTemplateColumns: '1fr' }}>
+              <JobHistoryView runs={jobRuns} pipelines={pipelines} onRerun={rerunJob} onOpenPipeline={openPipelineInAirflow} />
+            </div>
+          )}
+
+          {buildSubTab === 'lineage' && (
+            <div className="app-body tab-content-in" style={{ gridTemplateColumns: '1fr' }}>
+              <LineageView
+                pipelines={pipelines}
+                connections={connections}
+                airflowTriggers={airflowTriggers}
+                onBuildNew={() => setBuildSubTab('pipeline')}
+              />
+            </div>
+          )}
+
+          {buildSubTab === 'pipeline' && (
+          <div className="app-body tab-content-in">
           <Stepper
             steps={STEPS}
             activeIndex={step}
@@ -690,7 +720,9 @@ export default function App() {
               </div>
             )}
           </div>
-        </div>
+          </div>
+          )}
+        </>
       )}
 
       <InfoModal node={infoNode} onClose={() => setInfoNode(null)} />
@@ -698,7 +730,13 @@ export default function App() {
       <ChatWidget
         open={chatOpen}
         onOpenChange={setChatOpen}
-        currentLocation={view === 'build' ? `${VIEW_LABELS.build} — ${STEPS[step].title} step` : VIEW_LABELS[view]}
+        currentLocation={
+          view === 'build'
+            ? buildSubTab === 'pipeline'
+              ? `${BUILD_SUBTAB_LABELS.pipeline} — ${STEPS[step].title} step`
+              : BUILD_SUBTAB_LABELS[buildSubTab]
+            : VIEW_LABELS[view]
+        }
         jobRuns={jobRuns}
         dqExecutions={dqExecutions}
         dqRuleSets={dqRuleSets}
