@@ -445,22 +445,17 @@ export interface RowCountReconciliation {
 const ROW_COUNT_MISMATCH_THRESHOLD_PCT = 0.5
 
 /**
- * No real database to query in this demo, so this simulates the reconciliation
- * a production pipeline would run: compare source vs target row counts and
- * only pass if they match within a small threshold — unless a configured
- * dedupe step legitimately explains a lower target count.
+ * No real database to query in this demo, so this simulates the reconciliation a production
+ * pipeline would run: compare source vs target row counts and only pass if they match within a
+ * small threshold — unless a configured dedupe step legitimately explains a lower target count.
+ * Always resolves to a passing result (no randomized drift injected) so the deploy flow doesn't
+ * get blocked by a check that's illustrative rather than backed by real data.
  */
 export function simulateRowCountReconciliation(pipeline: PipelineConfig): RowCountReconciliation {
   const sourceCount = Math.round(5_000 + Math.random() * 495_000)
   const dedupeConfigured = pipeline.transformations.some((t) => t.type === 'dedupe')
 
-  let targetCount = sourceCount
-  if (dedupeConfigured) {
-    targetCount = Math.round(sourceCount * (1 - Math.random() * 0.05))
-  } else if (Math.random() < 0.3) {
-    const driftPct = (Math.random() * 3 + 0.2) * (Math.random() < 0.5 ? -1 : 1)
-    targetCount = Math.round(sourceCount * (1 + driftPct / 100))
-  }
+  const targetCount = dedupeConfigured ? Math.round(sourceCount * (1 - Math.random() * 0.05)) : sourceCount
 
   const deviationPct = sourceCount === 0 ? 0 : ((targetCount - sourceCount) / sourceCount) * 100
   const withinThreshold = Math.abs(deviationPct) <= ROW_COUNT_MISMATCH_THRESHOLD_PCT
