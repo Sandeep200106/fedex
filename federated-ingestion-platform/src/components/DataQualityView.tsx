@@ -399,10 +399,10 @@ export default function DataQualityView({
           <p>Onboard a BigQuery table or a GCS file, then define field-level rules and (for files) presence/size checks.</p>
         </div>
         <div className="field" style={{ maxWidth: 380 }}>
-          <label>Pipeline</label>
+          <label>DQ rules</label>
           <select value="" onChange={(e) => setSelectedId(e.target.value)}>
             <option value="" disabled>
-              Select a pipeline…
+              Select DQ rules…
             </option>
             {pipelineDropdownOptions.map((r) => (
               <option key={r.pipeline_id} value={r.pipeline_id}>
@@ -410,7 +410,7 @@ export default function DataQualityView({
               </option>
             ))}
           </select>
-          <span className="hint">Select a pipeline above to view its checks and execution history.</span>
+          <span className="hint">Select DQ rules above to view their checks and execution history.</span>
         </div>
         <div className="row-actions" style={{ marginTop: 16 }}>
           <button type="button" className="btn" onClick={startOnboarding}>
@@ -543,7 +543,7 @@ export default function DataQualityView({
       {!isNew && (
         <div className="row-actions" style={{ alignItems: 'flex-start' }}>
           <div className="field" style={{ maxWidth: 380 }}>
-            <label>Pipeline</label>
+            <label>DQ rules</label>
             <select value={selected.pipeline_id} onChange={(e) => setSelectedId(e.target.value)}>
               {pipelineDropdownOptions.map((r) => (
                 <option key={r.pipeline_id} value={r.pipeline_id}>
