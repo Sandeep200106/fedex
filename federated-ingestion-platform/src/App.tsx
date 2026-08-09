@@ -27,6 +27,7 @@ import {
   worseStatus,
 } from './data/dataQuality'
 import { TARGET_SCHEMA_EXISTS, deriveFileObjectKey, fetchColumns, fetchColumnsSync } from './data/schemaIntrospection'
+import { fetchAvailableSourceObjects, fetchAvailableTargetObjects } from './data/objectCatalog'
 import { loadConnections, saveConnections } from './data/connectionsStore'
 import { loadPipelines, savePipelines, upsertPipeline } from './data/pipelinesStore'
 import LineageView from './components/LineageView'
@@ -171,6 +172,10 @@ export default function App() {
   const [targetColumns, setTargetColumns] = useState<ColumnInfo[]>([])
   const [sourceColumnsLoading, setSourceColumnsLoading] = useState(false)
   const [targetColumnsLoading, setTargetColumnsLoading] = useState(false)
+  const [sourceObjects, setSourceObjects] = useState<string[]>([])
+  const [targetObjects, setTargetObjects] = useState<string[]>([])
+  const [sourceObjectsLoading, setSourceObjectsLoading] = useState(false)
+  const [targetObjectsLoading, setTargetObjectsLoading] = useState(false)
 
   const currentTemplate = useMemo(() => PIPELINE_TEMPLATES.find((t) => t.id === templateId), [templateId])
   const sourceType: ConnectionType = currentTemplate?.sourceType ?? 'postgresql'
@@ -212,6 +217,25 @@ export default function App() {
     }, 300)
     return () => clearTimeout(timer)
   }, [pipelineTarget.schema, pipelineTarget.table, targetType])
+
+  // These key off the CONNECTION id, not the typed object text — the catalog of what's
+  // available to pick from shouldn't wait for the user to already know what to type. Depending
+  // on the id (a stable string) rather than sourceConn/targetConn themselves matters here:
+  // those are freshly-found objects on every render, so depending on them directly would re-run
+  // this effect every render instead of only when the connection actually changes.
+  useEffect(() => {
+    setSourceObjectsLoading(true)
+    fetchAvailableSourceObjects(sourceConn)
+      .then(setSourceObjects)
+      .finally(() => setSourceObjectsLoading(false))
+  }, [sourceConnectionId])
+
+  useEffect(() => {
+    setTargetObjectsLoading(true)
+    fetchAvailableTargetObjects(targetConn)
+      .then(setTargetObjects)
+      .finally(() => setTargetObjectsLoading(false))
+  }, [targetConnectionId])
 
   useEffect(() => {
     const showsFileFormat = TARGET_OBJECT_CONFIG[targetType].showFileFormat
@@ -669,6 +693,10 @@ export default function App() {
                 targetColumns={targetColumns}
                 sourceColumnsLoading={sourceColumnsLoading}
                 targetColumnsLoading={targetColumnsLoading}
+                sourceObjects={sourceObjects}
+                targetObjects={targetObjects}
+                sourceObjectsLoading={sourceObjectsLoading}
+                targetObjectsLoading={targetObjectsLoading}
                 onSourceChange={setPipelineSource}
                 onTargetChange={setPipelineTarget}
                 onMappingChange={setMapping}

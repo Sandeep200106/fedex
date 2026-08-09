@@ -16,6 +16,10 @@ interface MappingStepProps {
   targetColumns: ColumnInfo[]
   sourceColumnsLoading: boolean
   targetColumnsLoading: boolean
+  sourceObjects: string[]
+  targetObjects: string[]
+  sourceObjectsLoading: boolean
+  targetObjectsLoading: boolean
   onSourceChange: (next: PipelineSource) => void
   onTargetChange: (next: PipelineTarget) => void
   onMappingChange: (next: ColumnMapping[]) => void
@@ -33,6 +37,10 @@ export default function MappingStep({
   targetColumns,
   sourceColumnsLoading,
   targetColumnsLoading,
+  sourceObjects,
+  targetObjects,
+  sourceObjectsLoading,
+  targetObjectsLoading,
   onSourceChange,
   onTargetChange,
   onMappingChange,
@@ -76,11 +84,24 @@ export default function MappingStep({
         <div className="form-grid">
           <div className="field">
             <label>{sourceObjectConfig.label}</label>
-            <input
-              value={source.object}
-              placeholder={sourceObjectConfig.placeholder}
-              onChange={(e) => onSourceChange({ ...source, object: e.target.value })}
-            />
+            {sourceObjectsLoading ? (
+              <input value="" placeholder="Loading available objects…" disabled />
+            ) : sourceObjects.length > 0 ? (
+              <select value={source.object} onChange={(e) => onSourceChange({ ...source, object: e.target.value })}>
+                <option value="">Select…</option>
+                {sourceObjects.map((o) => (
+                  <option key={o} value={o}>
+                    {o}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                value={source.object}
+                placeholder={sourceObjectConfig.placeholder}
+                onChange={(e) => onSourceChange({ ...source, object: e.target.value })}
+              />
+            )}
             <span className="hint">
               {sourceColumnsLoading
                 ? 'Fetching columns…'
@@ -198,11 +219,24 @@ export default function MappingStep({
           )}
           <div className="field">
             <label>{targetObjectConfig.tableLabel}</label>
-            <input
-              value={target.table}
-              placeholder={targetObjectConfig.tablePlaceholder}
-              onChange={(e) => onTargetChange({ ...target, table: e.target.value })}
-            />
+            {targetObjectsLoading ? (
+              <input value="" placeholder="Loading available objects…" disabled />
+            ) : targetObjects.length > 0 ? (
+              <select value={target.table} onChange={(e) => onTargetChange({ ...target, table: e.target.value })}>
+                <option value="">Select…</option>
+                {targetObjects.map((o) => (
+                  <option key={o} value={o}>
+                    {o}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                value={target.table}
+                placeholder={targetObjectConfig.tablePlaceholder}
+                onChange={(e) => onTargetChange({ ...target, table: e.target.value })}
+              />
+            )}
             <span className="hint">
               {targetColumnsLoading
                 ? 'Fetching columns…'
