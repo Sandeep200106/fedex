@@ -411,7 +411,27 @@ export default function AirflowConfigView({ configs, connections, pipelines, onC
                 <label>Pipeline to trigger</label>
                 <select
                   value={draft.target_pipeline_id}
-                  onChange={(e) => setDraft({ ...draft, target_pipeline_id: e.target.value })}
+                  onChange={(e) => {
+                    const pipelineId = e.target.value
+                    const pipeline = pipelines.find((p) => p.pipeline_id === pipelineId)
+                    setDraft((prev) => ({
+                      ...prev,
+                      target_pipeline_id: pipelineId,
+                      // Picking the pipeline to trigger also fills in what to check for —
+                      // this sensor's whole job is gating that pipeline's own source, so its
+                      // connection/object are the natural (and normally only sensible) choice.
+                      // Still fully editable afterward if a different check is actually wanted.
+                      ...(pipeline
+                        ? {
+                            check_connection_ref: pipeline.source.connection_ref,
+                            check_object: pipeline.source.object,
+                            check_column: '',
+                            check_operator: '=' as FilterOperator,
+                            check_value: '',
+                          }
+                        : {}),
+                    }))
+                  }}
                 >
                   <option value="">Select a deployed pipeline…</option>
                   {pipelines.map((p) => (
