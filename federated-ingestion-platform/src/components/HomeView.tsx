@@ -102,8 +102,6 @@ export default function HomeView({ onStartBuilding, onOpenChat }: HomeViewProps)
           })}
         </div>
       </section>
-
-      <footer className="home-footer">Built for Prodapt's data engineering teams.</footer>
     </div>
   )
 }
