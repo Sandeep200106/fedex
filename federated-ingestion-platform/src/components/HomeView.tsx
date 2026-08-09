@@ -1,7 +1,6 @@
 import { IconAssistant, IconConnections, IconDeploy, IconQuality, IconSchema, IconWizard } from './icons'
 import { CONNECTION_TYPES, PIPELINE_TEMPLATES } from '../data/templates'
 import { DQ_CHECK_MECHANISM_COUNT } from '../data/qualityRules'
-import FrameworkLoopDemo from './FrameworkLoopDemo'
 
 interface HomeViewProps {
   onStartBuilding: () => void
@@ -104,8 +103,6 @@ export default function HomeView({ onStartBuilding, onOpenChat, onLoadDemo }: Ho
           })}
         </div>
       </section>
-
-      <FrameworkLoopDemo />
 
       <section>
         <h2 className="home-section-title">Try a pre-built pipeline</h2>
