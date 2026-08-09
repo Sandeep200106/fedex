@@ -9,7 +9,6 @@ interface LineageViewProps {
   pipelines: PipelineConfig[]
   connections: ConnectionConfig[]
   airflowTriggers: AirflowTriggerConfig[]
-  onBuildNew: () => void
 }
 
 const CSV_HEADERS = [
@@ -52,7 +51,7 @@ interface LineageRow {
   owner: string
 }
 
-export default function LineageView({ pipelines, connections, airflowTriggers, onBuildNew }: LineageViewProps) {
+export default function LineageView({ pipelines, connections, airflowTriggers }: LineageViewProps) {
   const [search, setSearch] = useState('')
 
   function connectionFor(ref: string): ConnectionConfig | undefined {
@@ -154,9 +153,6 @@ export default function LineageView({ pipelines, connections, airflowTriggers, o
           <label>Search</label>
           <input type="text" placeholder="Filter by name or ID…" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
-        <button type="button" className="btn primary" style={{ alignSelf: 'flex-end' }} onClick={onBuildNew}>
-          + Build new pipeline
-        </button>
         <button
           type="button"
           className="btn"

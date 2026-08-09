@@ -622,12 +622,7 @@ export default function App() {
 
           {buildSubTab === 'lineage' && (
             <div className="app-body tab-content-in" style={{ gridTemplateColumns: '1fr' }}>
-              <LineageView
-                pipelines={pipelines}
-                connections={connections}
-                airflowTriggers={airflowTriggers}
-                onBuildNew={() => setBuildSubTab('pipeline')}
-              />
+              <LineageView pipelines={pipelines} connections={connections} airflowTriggers={airflowTriggers} />
             </div>
           )}
 
