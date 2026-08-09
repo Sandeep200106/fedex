@@ -147,9 +147,6 @@ export default function ChatWidget({ open, onOpenChange, currentLocation, jobRun
           <div className="chat-widget-head">
             <div>
               <strong>Assistant</strong>
-              <span className="chat-widget-subtitle">
-                {currentLocation ? `Grounded in this app's docs — you're on the ${currentLocation}` : "Ask a question, grounded in this app's own docs"}
-              </span>
             </div>
             <button type="button" className="chat-widget-close" onClick={() => onOpenChange(false)} aria-label="Close chat">
               ×

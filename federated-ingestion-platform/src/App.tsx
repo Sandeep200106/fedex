@@ -149,11 +149,11 @@ export default function App() {
   })
   const [mapping, setMapping] = useState<ColumnMapping[]>([])
   const [transformations, setTransformations] = useState<Transformation[]>([])
-  const [schedule, setSchedule] = useState<Schedule>({ type: 'cron', expression: '0 3 * * *', timezone: 'Asia/Kolkata' })
+  const [schedule] = useState<Schedule>({ type: 'cron', expression: '0 3 * * *', timezone: 'Asia/Kolkata' })
   const [dataService, setDataService] = useState<DataServiceEngine>('dataflow')
   const [language, setLanguage] = useState<PipelineLanguage>('python')
   const [throughput, setThroughput] = useState<ThroughputProfile>(emptyThroughputProfile())
-  const [isSourceOfTruth, setIsSourceOfTruth] = useState(false)
+  const [isSourceOfTruth] = useState(false)
   const [pipelineName, setPipelineName] = useState('')
   const [pipelineOwner, setPipelineOwner] = useState('')
   const [gitPath, setGitPath] = useState('')
@@ -294,46 +294,6 @@ export default function App() {
   function goToConnections(prefillType: ConnectionType) {
     setConnectionsPrefillType(prefillType)
     setView('connections')
-  }
-
-  // Seeds a complete Oracle -> GCS pipeline (mock HR.ORDERS data, dedupe on order_id
-  // so the row-count reconciliation check passes) so the full wizard flow can be
-  // demoed end to end without re-entering every field by hand.
-  function loadDemoPipeline() {
-    setTemplateId('oracle_to_gcs_v1')
-    setSourceConnectionId('conn_hr_oracle_prod')
-    setTargetConnectionId('conn_gcs_lake_prod')
-    setPipelineSource({
-      connection_ref: 'conn_hr_oracle_prod',
-      object: 'HR.ORDERS',
-      extraction_mode: 'full',
-      delivery_pattern: 'batch',
-      cursor_column: '',
-      filter_column: '',
-      filter_operator: '=',
-      filter_value: '',
-    })
-    setPipelineTarget({
-      connection_ref: 'conn_gcs_lake_prod',
-      schema: '',
-      table: 'orders/dt={{ds}}/part-*',
-      file_format: 'parquet',
-    })
-    setMapping([])
-    setTransformations([{ type: 'dedupe', keys: ['order_id'] }])
-    setSchedule({ type: 'cron', expression: '0 3 * * *', timezone: 'Asia/Kolkata' })
-    setDataService('data_fusion')
-    setLanguage('scala')
-    setThroughput({ value: 30, unit: 'rows_per_sec', sla_minutes: '' })
-    setIsSourceOfTruth(false)
-    setPipelineName('Orders Sync - Daily')
-    setPipelineOwner('data-engineering')
-    setGitPath('pipelines/orders_sync_daily.json')
-    setGitPathManuallyEdited(true)
-    setView('build')
-    setBuildSubTab('pipeline')
-    setStep(0)
-    setMaxReached(5)
   }
 
   function runPipeline(pipeline: PipelineConfig) {
@@ -587,7 +547,6 @@ export default function App() {
               setBuildSubTab('pipeline')
             }}
             onOpenChat={() => setChatOpen(true)}
-            onLoadDemo={loadDemoPipeline}
           />
         </div>
       )}

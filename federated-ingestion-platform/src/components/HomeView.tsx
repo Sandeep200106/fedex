@@ -5,7 +5,6 @@ import { DQ_CHECK_MECHANISM_COUNT } from '../data/qualityRules'
 interface HomeViewProps {
   onStartBuilding: () => void
   onOpenChat: () => void
-  onLoadDemo: () => void
 }
 
 const FEATURES = [
@@ -41,7 +40,7 @@ const FEATURES = [
   },
 ]
 
-export default function HomeView({ onStartBuilding, onOpenChat, onLoadDemo }: HomeViewProps) {
+export default function HomeView({ onStartBuilding, onOpenChat }: HomeViewProps) {
   return (
     <div className="panel home-panel">
       <section className="home-hero">
@@ -102,14 +101,6 @@ export default function HomeView({ onStartBuilding, onOpenChat, onLoadDemo }: Ho
             )
           })}
         </div>
-      </section>
-
-      <section>
-        <h2 className="home-section-title">Try a pre-built pipeline</h2>
-        <p className="home-section-body">Loads a fully-configured Oracle → GCS pipeline straight into the Build Pipeline wizard, so you can see a completed config without building one from scratch.</p>
-        <button type="button" className="btn" onClick={onLoadDemo}>
-          Load example: Oracle → GCS
-        </button>
       </section>
 
       <footer className="home-footer">Built for Prodapt's data engineering teams.</footer>
