@@ -80,7 +80,7 @@ export default function ChatWidget({ open, onOpenChange, currentLocation, jobRun
     {
       role: 'assistant',
       content:
-        "Hi! Ask me anything about how this platform works — pipeline steps, connection types, data quality checks, or the mock deploy flow. I can also see recent job and data quality failures, so ask if you're stuck on one.",
+        "Hi! Ask me anything about how this platform works — pipeline steps, connection types, data quality checks, or the deploy flow. I can also see recent job and data quality failures, so ask if you're stuck on one.",
     },
   ])
   const [input, setInput] = useState('')

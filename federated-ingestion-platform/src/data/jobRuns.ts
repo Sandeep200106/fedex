@@ -4,7 +4,7 @@ const RERUN_SUCCESS_PROBABILITY = 0.75
 const DQ_UNFIXED_SUCCESS_PROBABILITY = 0.2
 const DQ_FIXED_SUCCESS_PROBABILITY = 0.9
 
-function logTimestamp(date: Date): string {
+export function logTimestamp(date: Date): string {
   return date.toISOString().replace('T', ' ').slice(0, 19)
 }
 

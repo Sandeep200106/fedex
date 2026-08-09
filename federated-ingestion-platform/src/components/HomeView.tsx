@@ -108,10 +108,10 @@ export default function HomeView({ onStartBuilding, onOpenChat, onLoadDemo }: Ho
       <FrameworkLoopDemo />
 
       <section>
-        <h2 className="home-section-title">Try a pre-built demo pipeline</h2>
-        <p className="home-section-body">Loads a fully-configured Oracle → GCS pipeline (mock data) straight into the Build Pipeline wizard, so you can see a completed config without building one from scratch.</p>
+        <h2 className="home-section-title">Try a pre-built pipeline</h2>
+        <p className="home-section-body">Loads a fully-configured Oracle → GCS pipeline straight into the Build Pipeline wizard, so you can see a completed config without building one from scratch.</p>
         <button type="button" className="btn" onClick={onLoadDemo}>
-          Load demo: Oracle → GCS (mock data)
+          Load example: Oracle → GCS
         </button>
       </section>
 

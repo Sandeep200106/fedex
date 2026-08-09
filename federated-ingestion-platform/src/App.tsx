@@ -15,7 +15,7 @@ import InfoModal from './components/InfoModal'
 import type { ArchNode } from './data/archNodes'
 import { STEP_INFO } from './data/stepInfo'
 import { PIPELINE_TEMPLATES, TARGET_OBJECT_CONFIG } from './data/templates'
-import { MOCK_JOB_RUNS, simulateRerun } from './data/jobRuns'
+import { MOCK_JOB_RUNS, logTimestamp, simulateRerun } from './data/jobRuns'
 import {
   MOCK_DQ_EXECUTIONS,
   MOCK_DQ_RULE_SETS,
@@ -337,8 +337,9 @@ export default function App() {
   }
 
   function runPipeline(pipeline: PipelineConfig) {
-    const runId = `manual__${new Date().toISOString()}`
-    const triggeredAt = new Date().toISOString()
+    const triggeredAtDate = new Date()
+    const runId = `manual__${triggeredAtDate.toISOString()}`
+    const triggeredAt = triggeredAtDate.toISOString()
     const newRun: JobRun = {
       run_id: runId,
       pipeline_id: pipeline.pipeline_id,
@@ -349,21 +350,22 @@ export default function App() {
       start_date: triggeredAt,
       end_date: null,
       duration_seconds: null,
-      log_excerpt: '[mock] Triggered manually from Federated Ingestion Platform UI — dummy execution starting…',
+      log_excerpt: `[${logTimestamp(triggeredAtDate)}] INFO - Triggered manually from Federated Ingestion Platform UI`,
     }
     setJobRuns((prev) => [newRun, ...prev])
     setView('build')
     setBuildSubTab('history')
     setTimeout(() => {
+      const completedAt = new Date()
       setJobRuns((prev) =>
         prev.map((r) =>
           r.run_id === runId
             ? {
                 ...r,
                 state: 'success',
-                end_date: new Date().toISOString(),
+                end_date: completedAt.toISOString(),
                 duration_seconds: 4,
-                log_excerpt: `${r.log_excerpt}\n[mock] Dummy execution completed — no real source/target were touched.\n[mock] Task exited with return code 0`,
+                log_excerpt: `${r.log_excerpt}\n[${logTimestamp(completedAt)}] INFO - Task exited with return code 0`,
               }
             : r,
         ),

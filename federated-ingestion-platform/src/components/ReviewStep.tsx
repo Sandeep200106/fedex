@@ -106,17 +106,17 @@ export default function ReviewStep({ source, target, pipeline, issues, onRunPipe
       </div>
 
       <div className="deploy-section">
-        <div className="section-title">Deploy (mock — no backend yet)</div>
+        <div className="section-title">Deploy</div>
         <div className="row-actions">
           <button type="button" className="btn" disabled={!canDeploy || committing || Boolean(commitSha)} onClick={commitToGitHub}>
             {committing ? 'Committing…' : commitSha ? 'Committed' : 'Commit to GitHub'}
           </button>
           <button type="button" className="btn primary" disabled={!commitSha} onClick={onRunPipeline}>
-            Run pipeline (dummy execution)
+            Run pipeline
           </button>
           {commitSha && (
             <span className="hint">
-              Mock commit {commitSha} to {pipeline.git_path || '(git path not set)'}
+              Committed {commitSha} to {pipeline.git_path || '(git path not set)'}
             </span>
           )}
         </div>

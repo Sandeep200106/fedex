@@ -4,7 +4,7 @@ const STATIC_CHUNKS: RagChunk[] = [
   {
     id: 'getting-started',
     title: 'How do I build/develop a new ingestion pipeline?',
-    text: 'To build a new pipeline: click the "Build Pipeline" tab in the top navigation (or the "Start building" button on the Home tab). That opens a step-by-step wizard: Template (pick a source-to-target template, e.g. PostgreSQL to GCS or Oracle CDC to BigQuery) → Source (pick a saved connection of the required type) → Target (same, for the target type) → Mapping (map source columns to target columns, or set file format/load mode for file targets) → Details (name the pipeline, add transformations, set the Airflow schedule and which GCP data service runs it) → Review (see the generated JSON, commit to GitHub, and run a dummy execution). If you have not set up the source/target systems yet, add them once in the Connections tab first — every pipeline picks from that same reusable list instead of re-entering connection details each time.',
+    text: 'To build a new pipeline: click the "Build Pipeline" tab in the top navigation (or the "Start building" button on the Home tab). That opens a step-by-step wizard: Template (pick a source-to-target template, e.g. PostgreSQL to GCS or Oracle CDC to BigQuery) → Source (pick a saved connection of the required type) → Target (same, for the target type) → Mapping (map source columns to target columns, or set file format/load mode for file targets) → Details (name the pipeline, add transformations, set the Airflow schedule and which GCP data service runs it) → Review (see the generated JSON, commit to GitHub, and run the pipeline). If you have not set up the source/target systems yet, add them once in the Connections tab first — every pipeline picks from that same reusable list instead of re-entering connection details each time.',
   },
   {
     id: 'product-overview',
@@ -69,7 +69,7 @@ const STATIC_CHUNKS: RagChunk[] = [
   {
     id: 'wizard-review',
     title: 'Wizard step: Review and generate',
-    text: 'The Review step shows the exact JSON that would be generated for the source connection, the target connection, and the pipeline config. You can download the files individually or all at once. The Deploy section simulates the rest of the chain: Commit to GitHub fakes a commit (a random short SHA after a brief delay), and Run pipeline (dummy execution) is only enabled after committing — it adds a run to the Job History tab as Running, then flips it to Success a few seconds later. No real source or target is touched by either action.',
+    text: 'The Review step shows the exact JSON that would be generated for the source connection, the target connection, and the pipeline config. You can download the files individually or all at once. The Deploy section simulates the rest of the chain: Commit to GitHub fakes a commit (a random short SHA after a brief delay), and Run pipeline is only enabled after committing — it adds a run to the Job History tab as Running, then flips it to Success a few seconds later. No real source or target is touched by either action.',
   },
   {
     id: 'job-history',

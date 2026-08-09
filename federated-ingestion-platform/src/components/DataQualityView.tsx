@@ -712,7 +712,7 @@ export default function DataQualityView({
         <div>
           <div className="section-title">
             <AccordionToggle label="Generated SELECT statement" expanded={showGeneratedSql} onToggle={() => setShowGeneratedSql((v) => !v)} />
-            <HelpTip text="This demo has no live database connection — this is the query that would run against the source table to evaluate the rules configured above. It updates live as you check/uncheck rules." />
+            <HelpTip text="There is no live database connection wired up yet — this is the query that would run against the source table to evaluate the rules configured above. It updates live as you check/uncheck rules." />
           </div>
           {showGeneratedSql &&
             (generatedSql ? (
@@ -1064,7 +1064,7 @@ export default function DataQualityView({
                                         : `type changed: ${d.previous_type} → ${d.new_type}`}
                                   </span>
                                 </div>
-                                <p className="hint">What production would query instead of this mock diff:</p>
+                                <p className="hint">What production would query instead of this illustrative diff:</p>
                                 <pre className="sql-preview-block">{d.introspection_sql}</pre>
                               </div>
                             ))}

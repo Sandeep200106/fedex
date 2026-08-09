@@ -9,7 +9,7 @@ import HelpTip from './HelpTip'
 // are a different category, already covered by Job History's logs + AI analysis, not this.
 const BEFORE_SUCCESS_PROBABILITY = 0.15
 const AFTER_SUCCESS_PROBABILITY = 0.9
-const PIPELINE_LABEL = 'Orders Feed (GCS) (demo)'
+const PIPELINE_LABEL = 'Orders Feed (GCS)'
 const RULE_NAME = 'Zero-byte file detection (skip-not-fail)'
 const FAILURE_MESSAGE = 'Zero-byte file landed at gs://.../orders/dt={{ds}}/part-0.parquet — downstream parse step crashed on empty input'
 const FIX_SUCCESS_MESSAGE = 'Zero-byte file detected and skipped cleanly — downstream steps ran on the next valid file, no crash'
@@ -51,7 +51,7 @@ export default function FrameworkLoopDemo() {
     <section>
       <h2 className="home-section-title">
         See the framework close the loop
-        <HelpTip text="This walkthrough uses its own mock data, separate from your real Job History and DQ Framework — it's here to illustrate the idea: once a DQ check is adopted as a framework rule, future runs of the pipeline it protects fail far less often." />
+        <HelpTip text="This walkthrough uses its own separate data, distinct from your real Job History and DQ Framework — it's here to illustrate the idea: once a DQ check is adopted as a framework rule, future runs of the pipeline it protects fail far less often." />
       </h2>
       <p className="home-section-body">
         <strong>{PIPELINE_LABEL}</strong> keeps failing when a zero-byte file lands — there's no check yet to catch it before it
@@ -87,7 +87,7 @@ export default function FrameworkLoopDemo() {
               Rerun {PIPELINE_LABEL}
             </button>
             <button type="button" className="btn small ghost" onClick={resetDemo}>
-              Reset demo
+              Reset
             </button>
           </div>
           {attempts.length === 0 ? (

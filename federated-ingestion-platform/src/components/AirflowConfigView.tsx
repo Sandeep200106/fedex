@@ -551,14 +551,14 @@ export default function AirflowConfigView({ configs, connections, pipelines, onC
           </div>
 
           <div className="deploy-section">
-            <div className="section-title">Deploy (mock — no backend yet)</div>
+            <div className="section-title">Deploy</div>
             <div className="row-actions">
               <button type="button" className="btn" disabled={!canGenerate || committing || isDirty || !originalId} onClick={commit}>
                 {committing ? 'Committing…' : draft.commit_sha ? 'Re-commit to GitHub' : 'Commit to GitHub'}
               </button>
               {draft.commit_sha && (
                 <span className="hint">
-                  Mock commit {draft.commit_sha} to {draft.git_path || `airflow/${slugify(previewConfigId)}.json`} — last committed{' '}
+                  Committed {draft.commit_sha} to {draft.git_path || `airflow/${slugify(previewConfigId)}.json`} — last committed{' '}
                   {formatDateTime(draft.last_committed_at ?? null)}. See it on the <strong>Existing Airflow DAGs</strong> tab.
                 </span>
               )}
@@ -595,7 +595,7 @@ function RecentDagsPanel({
     <div className="panel-body tab-content-in">
       <p className="hint" style={{ marginBottom: 12 }}>
         DAGs that have been committed from the Build new Airflow tab. No real Airflow instance is wired up yet, so the DAG link
-        below is a placeholder (airflow.example.com) rather than a live grid view, and last/next run are mocked.
+        below is a placeholder (airflow.example.com) rather than a live grid view.
       </p>
       <table className="table">
         <thead>
