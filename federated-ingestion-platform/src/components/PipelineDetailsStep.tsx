@@ -127,7 +127,7 @@ export default function PipelineDetailsStep({
             placeholder={`pipelines/${slugify(name || 'pipeline_name')}.json`}
             onChange={(e) => onGitPathChange(e.target.value)}
           />
-          <span className="hint">Location the Config API will commit this pipeline JSON to in GitHub.</span>
+          <span className="hint">Defaults from the pipeline name — feel free to override it. Location the Config API will commit this pipeline JSON to in GitHub.</span>
         </div>
       </div>
 

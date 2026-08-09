@@ -88,6 +88,7 @@ export default function AirflowConfigView({ configs, connections, pipelines, onC
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [committing, setCommitting] = useState(false)
   const [nameManuallyEdited, setNameManuallyEdited] = useState(false)
+  const [gitPathManuallyEdited, setGitPathManuallyEdited] = useState(false)
   const [checkColumns, setCheckColumns] = useState<ColumnInfo[]>([])
   const [checkColumnsLoading, setCheckColumnsLoading] = useState(false)
 
@@ -105,6 +106,14 @@ export default function AirflowConfigView({ configs, connections, pipelines, onC
     if (!suggested) return
     setDraft((prev) => (prev.name === suggested ? prev : { ...prev, name: suggested }))
   }, [checkConnection?.name, targetPipeline, nameManuallyEdited])
+
+  // Same auto-suggest-until-overridden treatment for the git path, derived from the DAG name.
+  useEffect(() => {
+    if (gitPathManuallyEdited) return
+    const configId = slugify(draft.name.trim())
+    const suggested = configId ? `airflow/${configId}.json` : ''
+    setDraft((prev) => (prev.git_path === suggested ? prev : { ...prev, git_path: suggested }))
+  }, [draft.name, gitPathManuallyEdited])
 
   useEffect(() => {
     if (!focusPipelineId) return
@@ -140,6 +149,7 @@ export default function AirflowConfigView({ configs, connections, pipelines, onC
     setOriginalId(config.config_id)
     setDraft(config)
     setNameManuallyEdited(true)
+    setGitPathManuallyEdited(true)
   }
 
   function startNew() {
@@ -147,6 +157,7 @@ export default function AirflowConfigView({ configs, connections, pipelines, onC
     setOriginalId(null)
     setDraft(emptyAirflowTriggerConfig())
     setNameManuallyEdited(false)
+    setGitPathManuallyEdited(false)
   }
 
   function handleSave() {
@@ -501,8 +512,12 @@ export default function AirflowConfigView({ configs, connections, pipelines, onC
                 <input
                   value={draft.git_path}
                   placeholder={`airflow/${slugify(draft.name || 'config_name')}.json`}
-                  onChange={(e) => setDraft({ ...draft, git_path: e.target.value })}
+                  onChange={(e) => {
+                    setDraft({ ...draft, git_path: e.target.value })
+                    setGitPathManuallyEdited(true)
+                  }}
                 />
+                <span className="hint">Defaults from the DAG name — feel free to override it.</span>
               </div>
             </div>
           </div>

@@ -157,6 +157,15 @@ export default function App() {
   const [pipelineName, setPipelineName] = useState('')
   const [pipelineOwner, setPipelineOwner] = useState('')
   const [gitPath, setGitPath] = useState('')
+  const [gitPathManuallyEdited, setGitPathManuallyEdited] = useState(false)
+
+  // Defaults the pipeline's git path from its name — only while the user hasn't typed a path
+  // themselves — same auto-suggest-until-overridden pattern as the Airflow config's DAG name.
+  useEffect(() => {
+    if (gitPathManuallyEdited) return
+    const slug = slugify(pipelineName.trim())
+    setGitPath(slug ? `pipelines/${slug}.json` : '')
+  }, [pipelineName, gitPathManuallyEdited])
 
   const [jobRuns, setJobRuns] = useState<JobRun[]>(MOCK_JOB_RUNS)
 
@@ -320,6 +329,7 @@ export default function App() {
     setPipelineName('Orders Sync - Daily')
     setPipelineOwner('data-engineering')
     setGitPath('pipelines/orders_sync_daily.json')
+    setGitPathManuallyEdited(true)
     setView('build')
     setBuildSubTab('pipeline')
     setStep(0)
@@ -716,7 +726,10 @@ export default function App() {
                 sourceColumns={sourceColumns}
                 onNameChange={setPipelineName}
                 onOwnerChange={setPipelineOwner}
-                onGitPathChange={setGitPath}
+                onGitPathChange={(v) => {
+                  setGitPath(v)
+                  setGitPathManuallyEdited(true)
+                }}
                 onTransformationsChange={setTransformations}
                 onDataServiceChange={setDataService}
                 onLanguageChange={setLanguage}
