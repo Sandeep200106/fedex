@@ -519,23 +519,23 @@ export default function App() {
         <button type="button" className={`app-tab ${view === 'home' ? 'active' : ''}`} onClick={() => setView('home')}>
           Home
         </button>
+        <button type="button" className={`app-tab ${view === 'connections' ? 'active' : ''}`} onClick={() => setView('connections')}>
+          Connections
+        </button>
         <button type="button" className={`app-tab ${view === 'build' ? 'active' : ''}`} onClick={() => setView('build')}>
           Build Pipeline
         </button>
         <button type="button" className={`app-tab ${view === 'history' ? 'active' : ''}`} onClick={() => setView('history')}>
           Job History
         </button>
+        <button type="button" className={`app-tab ${view === 'lineage' ? 'active' : ''}`} onClick={() => setView('lineage')}>
+          Lineage
+        </button>
         <button type="button" className={`app-tab ${view === 'airflow' ? 'active' : ''}`} onClick={() => setView('airflow')}>
           Airflow Scheduling
         </button>
         <button type="button" className={`app-tab ${view === 'quality' ? 'active' : ''}`} onClick={() => setView('quality')}>
           Data Quality
-        </button>
-        <button type="button" className={`app-tab ${view === 'lineage' ? 'active' : ''}`} onClick={() => setView('lineage')}>
-          Lineage
-        </button>
-        <button type="button" className={`app-tab ${view === 'connections' ? 'active' : ''}`} onClick={() => setView('connections')}>
-          Connections
         </button>
       </nav>
 
