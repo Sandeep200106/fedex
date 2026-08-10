@@ -29,9 +29,12 @@ export function applicableRuleTypes(columnType: string): QualityRuleType[] {
 }
 
 // Source/file-level DQ mechanisms that aren't per-column rule types (file presence, file
-// size, schema drift, dedup) — named here so the Home dashboard's check count is derived,
-// not a hardcoded number that drifts out of sync as mechanisms are added.
-export const NON_COLUMN_DQ_MECHANISMS = ['File presence', 'File size', 'Schema drift', 'Dedup / golden-record'] as const
+// size, schema drift, dedup, row-count reconciliation) — named here so the Home dashboard's
+// check count is derived, not a hardcoded number that drifts out of sync as mechanisms are
+// added. Row-count reconciliation lives on the Review step (simulateRowCountReconciliation in
+// dataQuality.ts), not the Data Quality tab itself, but it's a real DQ mechanism this platform
+// runs, so it counts here too.
+export const NON_COLUMN_DQ_MECHANISMS = ['File presence', 'File size', 'Schema drift', 'Dedup / golden-record', 'Row-count reconciliation'] as const
 
 export const DQ_CHECK_MECHANISM_COUNT = QUALITY_RULE_TYPES.length + NON_COLUMN_DQ_MECHANISMS.length
 

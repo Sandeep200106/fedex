@@ -121,6 +121,30 @@ export const PIPELINE_TEMPLATES: PipelineTemplate[] = [
     defaultDataService: 'dataflow',
     defaultLanguage: 'java',
   },
+  {
+    id: 'mysql_to_bigquery_v1',
+    label: 'MySQL table → BigQuery table',
+    description: 'Extract from a MySQL table and merge into a BigQuery table — map columns by dragging source onto target.',
+    sourceType: 'mysql',
+    targetType: 'bigquery',
+    defaultExtractionMode: 'incremental',
+    defaultDeliveryPattern: 'micro_batch',
+    defaultLoadMode: 'update_merge',
+    defaultDataService: 'dataflow',
+    defaultLanguage: 'python',
+  },
+  {
+    id: 'sqlserver_to_bigquery_v1',
+    label: 'SQL Server table → BigQuery table',
+    description: 'Extract from a SQL Server table and merge into a BigQuery table — map columns by dragging source onto target.',
+    sourceType: 'sqlserver',
+    targetType: 'bigquery',
+    defaultExtractionMode: 'incremental',
+    defaultDeliveryPattern: 'micro_batch',
+    defaultLoadMode: 'update_merge',
+    defaultDataService: 'dataproc',
+    defaultLanguage: 'scala',
+  },
 ]
 
 export const CONNECTION_TYPES: { value: ConnectionType; label: string; defaultPort: number | '' }[] = [
