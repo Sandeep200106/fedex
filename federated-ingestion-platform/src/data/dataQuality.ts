@@ -3,6 +3,20 @@ import { buildDebugSelectForRule, buildDedupDebugSql, buildFreshnessDebugSql, bu
 import { mutateColumnsForDemo } from './schemaIntrospection'
 import { QUALITY_RULE_LABELS } from './qualityRules'
 
+// Anchors the seeded history/execution mock data to whenever the app actually loads, instead
+// of a fixed past date that silently goes stale (the Size trend chart labels the last history
+// entry "Today" regardless of its date field — see FileSizeChart.tsx — so a hardcoded date
+// eventually claims a day from months ago is "Today"). offset 0 = today, negative = past.
+function daysAgoIso(offset: number, hh = 0, mm = 0, ss = 0): string {
+  const now = new Date()
+  const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + offset, hh, mm, ss))
+  return d.toISOString().replace(/\.\d{3}Z$/, 'Z')
+}
+
+function daysAgoDate(offset: number): string {
+  return daysAgoIso(offset).slice(0, 10)
+}
+
 // Narratively "inherited" from each pipeline's dedupe transformation, since the
 // wizard's PipelineConfig and this DQ tab's DqRuleSet are separate, unlinked mock
 // datasets in this demo — used only to pre-fill sensible key_columns defaults below.
@@ -44,14 +58,14 @@ export const MOCK_DQ_RULE_SETS: DqRuleSet[] = [
     freshness_config: { timestamp_column: '', max_age_hours: 24 },
     schedule: { type: 'cron', expression: '30 6 * * *', timezone: 'Asia/Kolkata' },
     history: [
-      { date: '2026-07-05', file_exists: true, size_bytes: 162_400_000 },
-      { date: '2026-07-06', file_exists: true, size_bytes: 158_900_000 },
-      { date: '2026-07-07', file_exists: true, size_bytes: 171_200_000 },
-      { date: '2026-07-08', file_exists: true, size_bytes: 165_800_000 },
-      { date: '2026-07-09', file_exists: true, size_bytes: 160_100_000 },
-      { date: '2026-07-10', file_exists: true, size_bytes: 168_300_000 },
-      { date: '2026-07-11', file_exists: true, size_bytes: 166_900_000 },
-      { date: '2026-07-12', file_exists: true, size_bytes: 0 },
+      { date: daysAgoDate(-7), file_exists: true, size_bytes: 162_400_000 },
+      { date: daysAgoDate(-6), file_exists: true, size_bytes: 158_900_000 },
+      { date: daysAgoDate(-5), file_exists: true, size_bytes: 171_200_000 },
+      { date: daysAgoDate(-4), file_exists: true, size_bytes: 165_800_000 },
+      { date: daysAgoDate(-3), file_exists: true, size_bytes: 160_100_000 },
+      { date: daysAgoDate(-2), file_exists: true, size_bytes: 168_300_000 },
+      { date: daysAgoDate(-1), file_exists: true, size_bytes: 166_900_000 },
+      { date: daysAgoDate(0), file_exists: true, size_bytes: 0 },
     ],
   },
   {
@@ -77,13 +91,13 @@ export const MOCK_DQ_RULE_SETS: DqRuleSet[] = [
     freshness_config: { timestamp_column: '', max_age_hours: 24 },
     schedule: { type: 'cron', expression: '0 4 * * *', timezone: 'Asia/Kolkata' },
     history: [
-      { date: '2026-07-05', file_exists: true, size_bytes: 480_000_000 },
-      { date: '2026-07-06', file_exists: true, size_bytes: 512_000_000 },
-      { date: '2026-07-07', file_exists: true, size_bytes: 495_000_000 },
-      { date: '2026-07-08', file_exists: true, size_bytes: 470_000_000 },
-      { date: '2026-07-09', file_exists: true, size_bytes: 505_000_000 },
-      { date: '2026-07-10', file_exists: true, size_bytes: 488_000_000 },
-      { date: '2026-07-11', file_exists: true, size_bytes: 861_000_000 },
+      { date: daysAgoDate(-6), file_exists: true, size_bytes: 480_000_000 },
+      { date: daysAgoDate(-5), file_exists: true, size_bytes: 512_000_000 },
+      { date: daysAgoDate(-4), file_exists: true, size_bytes: 495_000_000 },
+      { date: daysAgoDate(-3), file_exists: true, size_bytes: 470_000_000 },
+      { date: daysAgoDate(-2), file_exists: true, size_bytes: 505_000_000 },
+      { date: daysAgoDate(-1), file_exists: true, size_bytes: 488_000_000 },
+      { date: daysAgoDate(0), file_exists: true, size_bytes: 861_000_000 },
     ],
   },
   {
@@ -109,13 +123,13 @@ export const MOCK_DQ_RULE_SETS: DqRuleSet[] = [
     freshness_config: { timestamp_column: '', max_age_hours: 24 },
     schedule: { type: 'cron', expression: '30 5 * * *', timezone: 'Asia/Kolkata' },
     history: [
-      { date: '2026-07-05', file_exists: true, size_bytes: 21_400_000 },
-      { date: '2026-07-06', file_exists: true, size_bytes: 23_100_000 },
-      { date: '2026-07-07', file_exists: true, size_bytes: 20_800_000 },
-      { date: '2026-07-08', file_exists: true, size_bytes: 22_600_000 },
-      { date: '2026-07-09', file_exists: true, size_bytes: 21_900_000 },
-      { date: '2026-07-10', file_exists: true, size_bytes: 22_300_000 },
-      { date: '2026-07-11', file_exists: false, size_bytes: null },
+      { date: daysAgoDate(-6), file_exists: true, size_bytes: 21_400_000 },
+      { date: daysAgoDate(-5), file_exists: true, size_bytes: 23_100_000 },
+      { date: daysAgoDate(-4), file_exists: true, size_bytes: 20_800_000 },
+      { date: daysAgoDate(-3), file_exists: true, size_bytes: 22_600_000 },
+      { date: daysAgoDate(-2), file_exists: true, size_bytes: 21_900_000 },
+      { date: daysAgoDate(-1), file_exists: true, size_bytes: 22_300_000 },
+      { date: daysAgoDate(0), file_exists: false, size_bytes: null },
     ],
   },
   {
@@ -141,13 +155,13 @@ export const MOCK_DQ_RULE_SETS: DqRuleSet[] = [
     freshness_config: { timestamp_column: '', max_age_hours: 24 },
     schedule: { type: 'cron', expression: '0 3 * * *', timezone: 'Asia/Kolkata' },
     history: [
-      { date: '2026-07-05', file_exists: true, size_bytes: 2_140_000_000 },
-      { date: '2026-07-06', file_exists: true, size_bytes: 2_180_000_000 },
-      { date: '2026-07-07', file_exists: false, size_bytes: null },
-      { date: '2026-07-08', file_exists: true, size_bytes: 2_205_000_000 },
-      { date: '2026-07-09', file_exists: true, size_bytes: 2_190_000_000 },
-      { date: '2026-07-10', file_exists: true, size_bytes: 2_170_000_000 },
-      { date: '2026-07-11', file_exists: true, size_bytes: 2_212_000_000 },
+      { date: daysAgoDate(-6), file_exists: true, size_bytes: 2_140_000_000 },
+      { date: daysAgoDate(-5), file_exists: true, size_bytes: 2_180_000_000 },
+      { date: daysAgoDate(-4), file_exists: false, size_bytes: null },
+      { date: daysAgoDate(-3), file_exists: true, size_bytes: 2_205_000_000 },
+      { date: daysAgoDate(-2), file_exists: true, size_bytes: 2_190_000_000 },
+      { date: daysAgoDate(-1), file_exists: true, size_bytes: 2_170_000_000 },
+      { date: daysAgoDate(0), file_exists: true, size_bytes: 2_212_000_000 },
     ],
   },
   {
@@ -241,18 +255,18 @@ export const MOCK_DQ_RULE_SETS: DqRuleSet[] = [
 ]
 
 export const MOCK_DQ_EXECUTIONS: DqExecution[] = [
-  { id: 'dqe_1', pipeline_id: 'pl_orders_feed_gcs', executed_at: '2026-07-11T06:30:04Z', trigger: 'scheduled', status: 'pass', message: 'Size is within 20% of the 7-day average.' },
-  { id: 'dqe_2', pipeline_id: 'pl_orders_feed_gcs', executed_at: '2026-07-10T06:30:03Z', trigger: 'scheduled', status: 'pass', message: 'Size is within 20% of the 7-day average.' },
-  { id: 'dqe_3', pipeline_id: 'pl_orders_feed_gcs', executed_at: '2026-07-09T06:30:05Z', trigger: 'scheduled', status: 'pass', message: 'Size is within 20% of the 7-day average.' },
-  { id: 'dqe_4', pipeline_id: 'pl_clickstream_gcs', executed_at: '2026-07-11T04:00:03Z', trigger: 'scheduled', status: 'warning', message: 'Size deviates +75.1% from the 7-day average — exceeds the 20% threshold.' },
-  { id: 'dqe_5', pipeline_id: 'pl_clickstream_gcs', executed_at: '2026-07-10T04:00:02Z', trigger: 'scheduled', status: 'pass', message: 'Size is within 20% of the 7-day average.' },
-  { id: 'dqe_6', pipeline_id: 'pl_clickstream_gcs', executed_at: '2026-07-09T04:00:04Z', trigger: 'scheduled', status: 'pass', message: 'Size is within 20% of the 7-day average.' },
-  { id: 'dqe_7', pipeline_id: 'pl_vendor_feed_gcs', executed_at: '2026-07-11T05:30:11Z', trigger: 'scheduled', status: 'fail', message: 'File not found at gs://my-gcs-bucket/vendor/dt={{ds}}/orders.csv' },
-  { id: 'dqe_8', pipeline_id: 'pl_vendor_feed_gcs', executed_at: '2026-07-10T05:30:02Z', trigger: 'scheduled', status: 'pass', message: 'Size is within 25% of the 7-day average.' },
-  { id: 'dqe_9', pipeline_id: 'pl_vendor_feed_gcs', executed_at: '2026-07-09T05:30:03Z', trigger: 'scheduled', status: 'pass', message: 'Size is within 25% of the 7-day average.' },
-  { id: 'dqe_10', pipeline_id: 'pl_inventory_snapshot_gcs', executed_at: '2026-07-11T03:00:06Z', trigger: 'scheduled', status: 'pass', message: 'Size is within 15% of the 7-day average.' },
-  { id: 'dqe_11', pipeline_id: 'pl_inventory_snapshot_gcs', executed_at: '2026-07-10T03:00:04Z', trigger: 'scheduled', status: 'pass', message: 'Size is within 15% of the 7-day average.' },
-  { id: 'dqe_12', pipeline_id: 'pl_inventory_snapshot_gcs', executed_at: '2026-07-07T03:00:08Z', trigger: 'scheduled', status: 'fail', message: 'File not found at gs://my-gcs-bucket/inventory/dt={{ds}}/snapshot.parquet' },
+  { id: 'dqe_1', pipeline_id: 'pl_orders_feed_gcs', executed_at: daysAgoIso(-1, 6, 30, 4), trigger: 'scheduled', status: 'pass', message: 'Size is within 20% of the 7-day average.' },
+  { id: 'dqe_2', pipeline_id: 'pl_orders_feed_gcs', executed_at: daysAgoIso(-2, 6, 30, 3), trigger: 'scheduled', status: 'pass', message: 'Size is within 20% of the 7-day average.' },
+  { id: 'dqe_3', pipeline_id: 'pl_orders_feed_gcs', executed_at: daysAgoIso(-3, 6, 30, 5), trigger: 'scheduled', status: 'pass', message: 'Size is within 20% of the 7-day average.' },
+  { id: 'dqe_4', pipeline_id: 'pl_clickstream_gcs', executed_at: daysAgoIso(0, 4, 0, 3), trigger: 'scheduled', status: 'warning', message: 'Size deviates +75.1% from the 7-day average — exceeds the 20% threshold.' },
+  { id: 'dqe_5', pipeline_id: 'pl_clickstream_gcs', executed_at: daysAgoIso(-1, 4, 0, 2), trigger: 'scheduled', status: 'pass', message: 'Size is within 20% of the 7-day average.' },
+  { id: 'dqe_6', pipeline_id: 'pl_clickstream_gcs', executed_at: daysAgoIso(-2, 4, 0, 4), trigger: 'scheduled', status: 'pass', message: 'Size is within 20% of the 7-day average.' },
+  { id: 'dqe_7', pipeline_id: 'pl_vendor_feed_gcs', executed_at: daysAgoIso(0, 5, 30, 11), trigger: 'scheduled', status: 'fail', message: 'File not found at gs://my-gcs-bucket/vendor/dt={{ds}}/orders.csv' },
+  { id: 'dqe_8', pipeline_id: 'pl_vendor_feed_gcs', executed_at: daysAgoIso(-1, 5, 30, 2), trigger: 'scheduled', status: 'pass', message: 'Size is within 25% of the 7-day average.' },
+  { id: 'dqe_9', pipeline_id: 'pl_vendor_feed_gcs', executed_at: daysAgoIso(-2, 5, 30, 3), trigger: 'scheduled', status: 'pass', message: 'Size is within 25% of the 7-day average.' },
+  { id: 'dqe_10', pipeline_id: 'pl_inventory_snapshot_gcs', executed_at: daysAgoIso(0, 3, 0, 6), trigger: 'scheduled', status: 'pass', message: 'Size is within 15% of the 7-day average.' },
+  { id: 'dqe_11', pipeline_id: 'pl_inventory_snapshot_gcs', executed_at: daysAgoIso(-1, 3, 0, 4), trigger: 'scheduled', status: 'pass', message: 'Size is within 15% of the 7-day average.' },
+  { id: 'dqe_12', pipeline_id: 'pl_inventory_snapshot_gcs', executed_at: daysAgoIso(-4, 3, 0, 8), trigger: 'scheduled', status: 'fail', message: 'File not found at gs://my-gcs-bucket/inventory/dt={{ds}}/snapshot.parquet' },
   // Deliberately no "zero-byte file" execution here — that exact scenario is already cited
   // as an Implemented mechanism in the case-study catalog (Flat Files Flow B), so recording
   // it again here would show the same thing as both "already handled" and "a live failure."
