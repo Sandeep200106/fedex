@@ -369,7 +369,10 @@ export function evaluateToday(rule: DqRuleSet): DqEvaluation {
     return { status: 'pending', message: 'Not checked yet — run a check to see the first result.', avg: null, deviationPct: null }
   }
 
-  if (rule.file_presence_enabled && !today.file_exists) {
+  // Unconditional, like the zero-byte check right below — a missing file is a hard failure
+  // whether or not the "File presence check" toggle is on; that toggle governs whether this
+  // gets flagged on a recurring schedule, not whether "the file simply isn't there" is true.
+  if (!today.file_exists) {
     return { status: 'fail', message: `File not found at ${rule.file_path}`, avg: null, deviationPct: null }
   }
 
