@@ -1,4 +1,4 @@
-import type { ConnectionType, DedupConfig, DqRuleSet, QualityRule } from '../types'
+import type { ConnectionType, DedupConfig, DqRuleSet, FreshnessConfig, QualityRule } from '../types'
 
 // This UI has no live database connection — the generated statements below are
 // what would actually run against the warehouse to evaluate the configured
@@ -193,5 +193,23 @@ export function buildDedupDebugSql(ruleSet: DqRuleSet, dedupConfig: DedupConfig,
     `GROUP BY ${keyList}`,
     'HAVING COUNT(*) > 1',
     'LIMIT 100;',
+  ].join('\n')
+}
+
+/** Debug query for the freshness/staleness check — the most recent row by the configured timestamp column. */
+export function buildFreshnessDebugSql(ruleSet: DqRuleSet, freshnessConfig: FreshnessConfig, connectionType?: ConnectionType): string {
+  const col = freshnessConfig.timestamp_column
+  if (!col) return ''
+
+  if (ruleSet.source_kind === 'table') {
+    const table = tableRef(ruleSet, connectionType)
+    return [`-- Most recent row by ${col}, to check data freshness`, `SELECT MAX(${col}) AS last_seen_at`, `FROM ${table};`].join('\n')
+  }
+
+  return [
+    `-- What a real implementation would inspect instead of this mock timestamp:`,
+    `-- the object's last-modified time on the file store, or a MAX(${col}) scan`,
+    `-- of the landed file itself, e.g.`,
+    `--   ${ruleSet.file_path}`,
   ].join('\n')
 }

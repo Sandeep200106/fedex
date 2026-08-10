@@ -1,5 +1,5 @@
 import type { RagChunk } from './vectorStore'
-import type { ColumnInfo, DedupDetail, QualityRuleType, RuleFailureDetail, SchemaDriftChangeType, SchemaDriftDetail } from '../types'
+import type { ColumnInfo, DedupDetail, FreshnessDetail, QualityRuleType, RuleFailureDetail, SchemaDriftChangeType, SchemaDriftDetail } from '../types'
 import { QUALITY_RULE_LABELS } from '../data/qualityRules'
 
 export interface LlmSettings {
@@ -304,6 +304,32 @@ export function buildDedupAnalysisPrompt(pipelineLabel: string, details: DedupDe
     {
       role: 'user',
       content: `Pipeline: ${pipelineLabel}\n\nDuplicate findings:\n${summary}`,
+    },
+  ]
+}
+
+/** Falls back to a fixed explanation when no LLM is configured — freshness findings don't vary in kind the way rule/drift failures do. */
+export function mockFreshnessAnalysis(pipelineLabel: string, details: FreshnessDetail | undefined): LogAnalysis {
+  if (!details) {
+    return { issue: 'No stale data to analyze.', resolution: 'Nothing to do — the most recent row was within the configured threshold.' }
+  }
+  return {
+    issue: `'${pipelineLabel}' has no row newer than ${details.age_hours}h old on '${details.timestamp_column}', past the ${details.max_age_hours}h freshness threshold.`,
+    resolution:
+      'Usually means the upstream job that lands this data silently stopped running or is stuck, rather than erroring outright. Check the upstream job\'s own schedule/logs before assuming this source is broken, and confirm the timestamp column still reflects when rows actually land.',
+  }
+}
+
+export function buildFreshnessAnalysisPrompt(pipelineLabel: string, details: FreshnessDetail): ChatMessage[] {
+  return [
+    {
+      role: 'system',
+      content:
+        'You are a data quality assistant helping a data engineer understand why a freshness/staleness check failed. Given the timestamp column, how old the most recent row is, the configured threshold, and the debug query used to find it, respond with exactly two short sections: "Issue:" (what is stale, in plain language) and "Resolution:" (concrete, numbered next steps to investigate or fix it). Do not include anything else.',
+    },
+    {
+      role: 'user',
+      content: `Pipeline: ${pipelineLabel}\n\nFreshness finding: most recent row on '${details.timestamp_column}' is ${details.age_hours}h old (threshold: ${details.max_age_hours}h). Debug query:\n${details.debug_sql}`,
     },
   ]
 }

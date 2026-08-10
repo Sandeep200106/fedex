@@ -1,5 +1,5 @@
-import type { ConnectionType, DedupDetail, DqCheckStatus, DqExecution, DqFileSample, DqRuleSet, PipelineConfig, RuleFailureDetail, SchemaDriftDetail } from '../types'
-import { buildDebugSelectForRule, buildDedupDebugSql, buildSchemaIntrospectionSql } from './dqSqlGenerator'
+import type { ConnectionType, DedupDetail, DqCheckStatus, DqExecution, DqFileSample, DqRuleSet, FreshnessDetail, PipelineConfig, RuleFailureDetail, SchemaDriftDetail } from '../types'
+import { buildDebugSelectForRule, buildDedupDebugSql, buildFreshnessDebugSql, buildSchemaIntrospectionSql } from './dqSqlGenerator'
 import { mutateColumnsForDemo } from './schemaIntrospection'
 import { QUALITY_RULE_LABELS } from './qualityRules'
 
@@ -40,6 +40,8 @@ export const MOCK_DQ_RULE_SETS: DqRuleSet[] = [
     schema_baseline: [],
     dedup_check_enabled: false,
     dedup_config: { key_columns: MOCK_DEDUP_KEYS_BY_PIPELINE_ID.pl_orders_feed_gcs, duplicate_tolerance_pct: 0 },
+    freshness_check_enabled: false,
+    freshness_config: { timestamp_column: '', max_age_hours: 24 },
     schedule: { type: 'cron', expression: '30 6 * * *', timezone: 'Asia/Kolkata' },
     history: [
       { date: '2026-07-05', file_exists: true, size_bytes: 162_400_000 },
@@ -71,6 +73,8 @@ export const MOCK_DQ_RULE_SETS: DqRuleSet[] = [
     schema_baseline: [],
     dedup_check_enabled: false,
     dedup_config: { key_columns: MOCK_DEDUP_KEYS_BY_PIPELINE_ID.pl_clickstream_gcs, duplicate_tolerance_pct: 0 },
+    freshness_check_enabled: false,
+    freshness_config: { timestamp_column: '', max_age_hours: 24 },
     schedule: { type: 'cron', expression: '0 4 * * *', timezone: 'Asia/Kolkata' },
     history: [
       { date: '2026-07-05', file_exists: true, size_bytes: 480_000_000 },
@@ -101,6 +105,8 @@ export const MOCK_DQ_RULE_SETS: DqRuleSet[] = [
     schema_baseline: [],
     dedup_check_enabled: false,
     dedup_config: { key_columns: MOCK_DEDUP_KEYS_BY_PIPELINE_ID.pl_vendor_feed_gcs, duplicate_tolerance_pct: 0 },
+    freshness_check_enabled: false,
+    freshness_config: { timestamp_column: '', max_age_hours: 24 },
     schedule: { type: 'cron', expression: '30 5 * * *', timezone: 'Asia/Kolkata' },
     history: [
       { date: '2026-07-05', file_exists: true, size_bytes: 21_400_000 },
@@ -131,6 +137,8 @@ export const MOCK_DQ_RULE_SETS: DqRuleSet[] = [
     schema_baseline: [],
     dedup_check_enabled: false,
     dedup_config: { key_columns: MOCK_DEDUP_KEYS_BY_PIPELINE_ID.pl_inventory_snapshot_gcs, duplicate_tolerance_pct: 0 },
+    freshness_check_enabled: false,
+    freshness_config: { timestamp_column: '', max_age_hours: 24 },
     schedule: { type: 'cron', expression: '0 3 * * *', timezone: 'Asia/Kolkata' },
     history: [
       { date: '2026-07-05', file_exists: true, size_bytes: 2_140_000_000 },
@@ -171,6 +179,8 @@ export const MOCK_DQ_RULE_SETS: DqRuleSet[] = [
     schema_baseline: [],
     dedup_check_enabled: false,
     dedup_config: { key_columns: MOCK_DEDUP_KEYS_BY_PIPELINE_ID.pl_customer_master_bigquery, duplicate_tolerance_pct: 0 },
+    freshness_check_enabled: false,
+    freshness_config: { timestamp_column: '', max_age_hours: 24 },
     schedule: { type: 'cron', expression: '0 5 * * *', timezone: 'Asia/Kolkata' },
     history: [],
   },
@@ -193,6 +203,8 @@ export const MOCK_DQ_RULE_SETS: DqRuleSet[] = [
     schema_baseline: [],
     dedup_check_enabled: false,
     dedup_config: { key_columns: MOCK_DEDUP_KEYS_BY_PIPELINE_ID.pl_mediation_usage_gcs, duplicate_tolerance_pct: 0 },
+    freshness_check_enabled: false,
+    freshness_config: { timestamp_column: '', max_age_hours: 24 },
     schedule: { type: 'cron', expression: '0 7 * * *', timezone: 'Asia/Kolkata' },
     history: [],
   },
@@ -221,6 +233,8 @@ export const MOCK_DQ_RULE_SETS: DqRuleSet[] = [
     schema_baseline: [],
     dedup_check_enabled: false,
     dedup_config: { key_columns: MOCK_DEDUP_KEYS_BY_PIPELINE_ID.pl_billing_orders_cdc_bigquery, duplicate_tolerance_pct: 0 },
+    freshness_check_enabled: false,
+    freshness_config: { timestamp_column: '', max_age_hours: 24 },
     schedule: { type: 'cron', expression: '*/15 * * * *', timezone: 'Asia/Kolkata' },
     history: [],
   },
@@ -502,6 +516,8 @@ export function emptyDqRuleSet(): DqRuleSet {
     schema_baseline: [],
     dedup_check_enabled: false,
     dedup_config: { key_columns: [], duplicate_tolerance_pct: 0 },
+    freshness_check_enabled: false,
+    freshness_config: { timestamp_column: '', max_age_hours: 24 },
     schedule: { type: 'cron', expression: '0 6 * * *', timezone: 'Asia/Kolkata' },
     history: [],
   }
@@ -609,5 +625,45 @@ export function simulateDedupCheck(ruleSet: DqRuleSet, connectionType?: Connecti
     status: 'fail',
     message: `${base} — exceeds the ${ruleSet.dedup_config.duplicate_tolerance_pct}% tolerance configured. Usually means an upstream job re-ran without deduping, or the golden-record key stopped being unique after a source change.`,
     details: [{ key_values: keys, duplicate_row_count: duplicateRows, debug_sql: buildDedupDebugSql(ruleSet, ruleSet.dedup_config, connectionType) }],
+  }
+}
+
+export interface FreshnessCheckResult {
+  status: DqCheckStatus
+  message: string
+  details?: FreshnessDetail
+}
+
+/**
+ * No live source to query in this demo, so this simulates a staleness monitor: most runs find
+ * data landed recently, occasionally the most recent row is older than the configured threshold
+ * (as if an upstream job silently stopped running instead of erroring outright, which a
+ * presence/size check alone wouldn't catch if the file or table itself is still there).
+ */
+export function simulateFreshnessCheck(ruleSet: DqRuleSet, connectionType?: ConnectionType): FreshnessCheckResult {
+  const { timestamp_column, max_age_hours } = ruleSet.freshness_config
+  if (!timestamp_column) {
+    return { status: 'pending', message: 'No timestamp column configured for the freshness check yet.' }
+  }
+
+  const isStale = Math.random() < 0.25
+  const ageHours = isStale
+    ? Math.round(max_age_hours * (1.1 + Math.random()))
+    : Math.round(Math.random() * max_age_hours * 0.6)
+  if (!isStale) {
+    return {
+      status: 'pass',
+      message: `Most recent row is ${ageHours}h old on '${timestamp_column}' — within the ${max_age_hours}h threshold.`,
+    }
+  }
+
+  const lastSeenAt = new Date(Date.now() - ageHours * 60 * 60 * 1000).toISOString()
+  const debug_sql = buildFreshnessDebugSql(ruleSet, ruleSet.freshness_config, connectionType)
+  const details: FreshnessDetail = { timestamp_column, last_seen_at: lastSeenAt, age_hours: ageHours, max_age_hours, debug_sql }
+
+  return {
+    status: 'fail',
+    message: `Most recent row is ${ageHours}h old on '${timestamp_column}' — exceeds the ${max_age_hours}h threshold. Usually means the upstream job silently stopped running rather than erroring outright.`,
+    details,
   }
 }

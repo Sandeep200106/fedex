@@ -219,6 +219,19 @@ export interface DedupDetail {
   debug_sql: string
 }
 
+export interface FreshnessConfig {
+  timestamp_column: string
+  max_age_hours: number
+}
+
+export interface FreshnessDetail {
+  timestamp_column: string
+  last_seen_at: string
+  age_hours: number
+  max_age_hours: number
+  debug_sql: string
+}
+
 export interface DqRuleSet {
   pipeline_id: string
   pipeline_label: string
@@ -238,6 +251,8 @@ export interface DqRuleSet {
   schema_baseline: ColumnInfo[]
   dedup_check_enabled: boolean
   dedup_config: DedupConfig
+  freshness_check_enabled: boolean
+  freshness_config: FreshnessConfig
   schedule: Schedule
   history: DqFileSample[]
 }
@@ -261,6 +276,7 @@ export interface DqExecution {
   rule_failures?: RuleFailureDetail[]
   schema_drift_details?: SchemaDriftDetail[]
   dedup_details?: DedupDetail[]
+  freshness_details?: FreshnessDetail
 }
 
 // The Airflow sensor operator used to check for data, derived from the checked

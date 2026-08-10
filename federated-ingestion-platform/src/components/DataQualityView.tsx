@@ -8,6 +8,7 @@ import {
   buildDedupAnalysisPrompt,
   buildDqFailureAnalysisPrompt,
   buildFileCheckAnalysisPrompt,
+  buildFreshnessAnalysisPrompt,
   buildSchemaDriftAnalysisPrompt,
   callLlm,
   getLlmSettings,
@@ -15,6 +16,7 @@ import {
   mockDedupAnalysis,
   mockDqFailureAnalysis,
   mockFileCheckAnalysis,
+  mockFreshnessAnalysis,
   mockSchemaDriftAnalysis,
 } from '../rag/llmClient'
 import { formatBytes, formatDate, formatDateTime } from '../utils/format'
@@ -131,6 +133,7 @@ export default function DataQualityView({
   const [dqAnalyses, setDqAnalyses] = useState<Record<string, DqAnalysis>>({})
   const [driftAnalyses, setDriftAnalyses] = useState<Record<string, DqAnalysis>>({})
   const [dedupAnalyses, setDedupAnalyses] = useState<Record<string, DqAnalysis>>({})
+  const [freshnessAnalyses, setFreshnessAnalyses] = useState<Record<string, DqAnalysis>>({})
   const [fileCheckAnalyses, setFileCheckAnalyses] = useState<Record<string, DqAnalysis>>({})
 
   const existing = ruleSets.find((r) => r.pipeline_id === selectedId)
@@ -331,6 +334,30 @@ export default function DataQualityView({
     }))
   }
 
+  async function analyzeFreshness(exec: DqExecution) {
+    if (!exec.freshness_details || !existing) return
+    const pipelineLabel = existing.pipeline_label
+    const details = exec.freshness_details
+    setFreshnessAnalyses((prev) => ({ ...prev, [exec.id]: { loading: true } }))
+    const settings = getLlmSettings()
+
+    if (isLlmConfigured(settings)) {
+      try {
+        const text = await callLlm(settings, buildFreshnessAnalysisPrompt(pipelineLabel, details))
+        setFreshnessAnalyses((prev) => ({ ...prev, [exec.id]: { loading: false, text, isMock: false } }))
+        return
+      } catch {
+        // fall through to the mock analyzer below
+      }
+    }
+
+    const mock = mockFreshnessAnalysis(pipelineLabel, details)
+    setFreshnessAnalyses((prev) => ({
+      ...prev,
+      [exec.id]: { loading: false, text: `Issue: ${mock.issue}\n\nResolution: ${mock.resolution}`, isMock: true },
+    }))
+  }
+
   async function analyzeFileCheck(exec: DqExecution) {
     if (!existing) return
     const pipelineLabel = existing.pipeline_label
@@ -525,6 +552,45 @@ export default function DataQualityView({
               value={selected.dedup_config.duplicate_tolerance_pct}
               onChange={(e) =>
                 updateSelected({ dedup_config: { ...selected.dedup_config, duplicate_tolerance_pct: Number(e.target.value) || 0 } })
+              }
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  )
+
+  const freshnessCard = (
+    <div className="transform-card">
+      <div className="transform-card-head">
+        <AccordionToggle
+          label="Freshness check"
+          expanded={selected.freshness_check_enabled}
+          onToggle={() => updateSelected({ freshness_check_enabled: !selected.freshness_check_enabled })}
+        />
+        <HelpTip text="Fails if the most recent row is older than the configured threshold — catches an upstream job that silently stopped running, which a file/table presence check alone would miss since the file or table itself is still there." />
+      </div>
+      {selected.freshness_check_enabled && (
+        <div className="form-grid">
+          <div className="field">
+            <label>Timestamp column</label>
+            <input
+              value={selected.freshness_config.timestamp_column}
+              placeholder="updated_at"
+              onChange={(e) => updateSelected({ freshness_config: { ...selected.freshness_config, timestamp_column: e.target.value } })}
+            />
+            {availableColumns.length > 0 && (
+              <span className="hint">Columns found: {availableColumns.map((c) => c.name).join(', ')}</span>
+            )}
+          </div>
+          <div className="field">
+            <label>Max age (hours)</label>
+            <input
+              type="number"
+              min={1}
+              value={selected.freshness_config.max_age_hours}
+              onChange={(e) =>
+                updateSelected({ freshness_config: { ...selected.freshness_config, max_age_hours: Number(e.target.value) || 1 } })
               }
             />
           </div>
@@ -812,6 +878,7 @@ export default function DataQualityView({
 
           {schemaDriftCard}
           {dedupCard}
+          {freshnessCard}
 
           <div className="transform-card">
             <div className="transform-card-head">
@@ -842,6 +909,7 @@ export default function DataQualityView({
         <div className="rule-grid">
           {schemaDriftCard}
           {dedupCard}
+          {freshnessCard}
 
           <div className="transform-card">
             <div className="transform-card-head">
@@ -989,12 +1057,14 @@ export default function DataQualityView({
                 const hasFailures = Boolean(exec.rule_failures && exec.rule_failures.length > 0)
                 const hasDrift = Boolean(exec.schema_drift_details && exec.schema_drift_details.length > 0)
                 const hasDedup = Boolean(exec.dedup_details && exec.dedup_details.length > 0)
-                const isPlainFailure = (exec.status === 'fail' || exec.status === 'warning') && !hasFailures && !hasDrift && !hasDedup
-                const hasDetails = hasFailures || hasDrift || hasDedup || isPlainFailure
+                const hasFreshness = Boolean(exec.freshness_details)
+                const isPlainFailure = (exec.status === 'fail' || exec.status === 'warning') && !hasFailures && !hasDrift && !hasDedup && !hasFreshness
+                const hasDetails = hasFailures || hasDrift || hasDedup || hasFreshness || isPlainFailure
                 const isExpanded = expandedExecId === exec.id
                 const analysis = dqAnalyses[exec.id]
                 const driftAnalysis = driftAnalyses[exec.id]
                 const dedupAnalysis = dedupAnalyses[exec.id]
+                const freshnessAnalysis = freshnessAnalyses[exec.id]
                 const fileCheckAnalysis = fileCheckAnalyses[exec.id]
                 return (
                   <Fragment key={exec.id}>
@@ -1120,6 +1190,41 @@ export default function DataQualityView({
                                     </button>
                                   </div>
                                   <p style={{ whiteSpace: 'pre-wrap' }}>{dedupAnalysis.text}</p>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {hasFreshness && (
+                            <div className="transform-card" style={{ margin: '10px 16px' }}>
+                              <div className="transform-card-head">
+                                <strong>{exec.freshness_details!.timestamp_column}</strong>
+                                <span className="hint mono">
+                                  {exec.freshness_details!.age_hours}h old · threshold {exec.freshness_details!.max_age_hours}h
+                                </span>
+                              </div>
+                              <p className="hint">Debug query for the most recent row:</p>
+                              <pre className="sql-preview-block">{exec.freshness_details!.debug_sql}</pre>
+                            </div>
+                          )}
+                          {hasFreshness && (
+                            <div className="ai-analysis" style={{ margin: '0 16px 12px' }}>
+                              {!freshnessAnalysis && (
+                                <button type="button" className="btn small" onClick={() => analyzeFreshness(exec)}>
+                                  Analyze with AI
+                                </button>
+                              )}
+                              {freshnessAnalysis?.loading && <span className="hint">The AI is looking at this staleness finding…</span>}
+                              {freshnessAnalysis && !freshnessAnalysis.loading && (
+                                <div className="ai-analysis-result">
+                                  <div className="ai-analysis-head">
+                                    <strong>AI analysis</strong>
+                                    {freshnessAnalysis.isMock && <span className="badge">built-in analyzer</span>}
+                                    <button type="button" className="btn small ghost" onClick={() => analyzeFreshness(exec)}>
+                                      Re-analyze
+                                    </button>
+                                  </div>
+                                  <p style={{ whiteSpace: 'pre-wrap' }}>{freshnessAnalysis.text}</p>
                                 </div>
                               )}
                             </div>

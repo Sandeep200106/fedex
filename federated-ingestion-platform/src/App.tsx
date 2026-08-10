@@ -22,6 +22,7 @@ import {
   evaluateToday,
   simulateDedupCheck,
   simulateFirstCheck,
+  simulateFreshnessCheck,
   simulateSchemaDriftCheck,
   simulateTableRuleCheck,
   worseStatus,
@@ -47,6 +48,7 @@ import type {
   DqCheckStatus,
   DqExecution,
   DqRuleSet,
+  FreshnessDetail,
   JobRun,
   PipelineConfig,
   PipelineLanguage,
@@ -368,6 +370,7 @@ export default function App() {
     let ruleFailures: RuleFailureDetail[] | undefined
     let schemaDriftDetails: SchemaDriftDetail[] | undefined
     let dedupDetails: DedupDetail[] | undefined
+    let freshnessDetails: FreshnessDetail | undefined
 
     if (ruleForEvaluation.source_kind === 'table') {
       const result = simulateTableRuleCheck(ruleForEvaluation, connectionType)
@@ -402,6 +405,15 @@ export default function App() {
       }
     }
 
+    if (ruleForEvaluation.freshness_check_enabled) {
+      const freshness = simulateFreshnessCheck(ruleForEvaluation, connectionType)
+      status = worseStatus(status, freshness.status)
+      if (freshness.details) {
+        message = `${message} ${freshness.message}`
+        freshnessDetails = freshness.details
+      }
+    }
+
     const execution: DqExecution = {
       id: `dqe_manual_${Math.random().toString(36).slice(2, 9)}`,
       pipeline_id: pipelineId,
@@ -412,6 +424,7 @@ export default function App() {
       rule_failures: ruleFailures,
       schema_drift_details: schemaDriftDetails,
       dedup_details: dedupDetails,
+      freshness_details: freshnessDetails,
     }
     setDqExecutions((prev) => [execution, ...prev])
   }
