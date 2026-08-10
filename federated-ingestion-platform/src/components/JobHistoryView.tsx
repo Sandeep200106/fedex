@@ -9,11 +9,8 @@ import { IconAirflow } from './icons'
 interface JobHistoryViewProps {
   runs: JobRun[]
   pipelines: PipelineConfig[]
-  onRerun: (run: JobRun) => void
   onOpenPipeline: (pipelineId: string) => void
 }
-
-const RERUNNABLE_STATES: RunState[] = ['failed', 'up_for_retry']
 
 const STATUS_OPTIONS: { value: RunState | 'all'; label: string }[] = [
   { value: 'all', label: 'All statuses' },
@@ -32,7 +29,7 @@ interface Analysis {
   isMock?: boolean
 }
 
-export default function JobHistoryView({ runs, pipelines, onRerun, onOpenPipeline }: JobHistoryViewProps) {
+export default function JobHistoryView({ runs, pipelines, onOpenPipeline }: JobHistoryViewProps) {
   const [pipelineFilter, setPipelineFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState<RunState | 'all'>('all')
   const [expandedRunId, setExpandedRunId] = useState<string | null>(null)
@@ -171,19 +168,6 @@ export default function JobHistoryView({ runs, pipelines, onRerun, onOpenPipelin
                     <button type="button" className="btn small ghost">
                       {isExpanded ? 'Hide logs' : 'View logs'}
                     </button>
-                    {RERUNNABLE_STATES.includes(run.state) && (
-                      <button
-                        type="button"
-                        className="btn small"
-                        style={{ marginLeft: 8 }}
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          onRerun(run)
-                        }}
-                      >
-                        Rerun
-                      </button>
-                    )}
                   </td>
                 </tr>
                 {isExpanded && (

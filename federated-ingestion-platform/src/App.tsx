@@ -15,7 +15,7 @@ import InfoModal from './components/InfoModal'
 import type { ArchNode } from './data/archNodes'
 import { STEP_INFO } from './data/stepInfo'
 import { PIPELINE_TEMPLATES, TARGET_OBJECT_CONFIG } from './data/templates'
-import { MOCK_JOB_RUNS, logTimestamp, simulateRerun } from './data/jobRuns'
+import { MOCK_JOB_RUNS, logTimestamp } from './data/jobRuns'
 import {
   MOCK_DQ_EXECUTIONS,
   MOCK_DQ_RULE_SETS,
@@ -34,7 +34,7 @@ import { loadPipelines, savePipelines, upsertPipeline } from './data/pipelinesSt
 import LineageView from './components/LineageView'
 import AirflowConfigView from './components/AirflowConfigView'
 import { loadAirflowTriggers, saveAirflowTriggers } from './data/airflowTriggerStore'
-import { loadFrameworkRules, saveFrameworkRules, frameworkRuleFromSuggestion, isPatternAdopted } from './data/dqFramework'
+import { loadFrameworkRules, saveFrameworkRules, frameworkRuleFromSuggestion } from './data/dqFramework'
 import type { RuleSuggestion } from './rag/llmClient'
 import { emptyConnectionConfig, emptyThroughputProfile } from './types'
 import type {
@@ -170,11 +170,6 @@ export default function App() {
   }, [pipelineName, gitPathManuallyEdited])
 
   const [jobRuns, setJobRuns] = useState<JobRun[]>(MOCK_JOB_RUNS)
-
-  function rerunJob(run: JobRun) {
-    const dqPatternAdopted = run.dq_pattern_key ? isPatternAdopted(frameworkRules, run.dq_pattern_key) : false
-    setJobRuns((prev) => [simulateRerun(run, dqPatternAdopted), ...prev])
-  }
 
   const [dqRuleSets, setDqRuleSets] = useState<DqRuleSet[]>(MOCK_DQ_RULE_SETS)
   const [dqExecutions, setDqExecutions] = useState<DqExecution[]>(MOCK_DQ_EXECUTIONS)
@@ -624,7 +619,7 @@ export default function App() {
 
           {buildSubTab === 'history' && (
             <div className="app-body tab-content-in" style={{ gridTemplateColumns: '1fr' }}>
-              <JobHistoryView runs={jobRuns} pipelines={pipelines} onRerun={rerunJob} onOpenPipeline={openPipelineInAirflow} />
+              <JobHistoryView runs={jobRuns} pipelines={pipelines} onOpenPipeline={openPipelineInAirflow} />
             </div>
           )}
 
